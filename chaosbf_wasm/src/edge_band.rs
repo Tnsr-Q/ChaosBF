@@ -61,13 +61,17 @@ impl EdgeBandRouter {
 
         match strategy {
             EdgeBandStrategy::MarginalOnly => {
-                // Only select marginal elites
+                // Only select marginal elites (those at the edge of chaos)
                 let marginal: Vec<&TaggedElite> = elites.iter()
                     .filter(|e| e.tag == EdgeTag::Marginal)
                     .collect();
 
                 if marginal.is_empty() {
-                    // Fallback to random
+                    // Fallback to uniform random selection when no marginal elites exist.
+                    // This can happen early in evolution before Lyapunov estimates stabilize,
+                    // or in populations that have converged away from criticality.
+                    // Random selection maintains exploration and prevents stagnation,
+                    // allowing the population to rediscover the edge-of-chaos regime.
                     Some(&elites[self.rng.gen_range(0, elites.len())])
                 } else {
                     Some(marginal[self.rng.gen_range(0, marginal.len())])

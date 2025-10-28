@@ -78,7 +78,13 @@ impl Snapshot {
             f: state.f,
             lambda_estimate: state.lambda_hat,
             code: state.code[..state.code_len].to_vec(),
-            tape: state.mem[..state.mem_size.min(1024)].to_vec(),  // Save first 1KB
+            // Snapshot size limit: We save only the first 1KB of tape to balance
+            // reproducibility with memory efficiency. Most ChaosBF programs use
+            // a small working set near the tape origin. Full 64KB tape snapshots
+            // would consume excessive memory for marginal reproducibility gains.
+            // For full-fidelity reproduction, use the snapshot interval of ~100 steps
+            // which captures tape evolution over time rather than complete state.
+            tape: state.mem[..state.mem_size.min(1024)].to_vec(),
             ptr: state.ptr,
             output_len: state.output_len,
             genome_bank_size: state.bank_size,

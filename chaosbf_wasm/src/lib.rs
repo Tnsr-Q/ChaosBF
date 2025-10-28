@@ -32,10 +32,28 @@ use repro::ReproSpine;
 
 use std::cell::RefCell;
 
-// Global simulation state
+// ============================================================================
+// Global State Management
+// ============================================================================
+//
+// SAFETY: The static mut SIM is safe in the WASM single-threaded context.
+// WASM runs in a single-threaded environment (no SharedArrayBuffer), making
+// static mut access race-free. We use static mut here instead of thread_local!
+// for performance and simplicity in extern "C" functions.
+//
+// The advanced features use thread_local! + RefCell for:
+// 1. Consistency with Rust best practices
+// 2. Optional/lazy initialization
+// 3. Future-proofing if WASM threading is needed
+//
+// Static mut return buffers (METRICS, DESC, STATS) are used in multiple
+// functions to provide stable pointers to JavaScript. These are safe because:
+// - WASM is single-threaded (no concurrent access)
+// - Each function fills its buffer before returning the pointer
+// - JavaScript consumes the data before the next call
 static mut SIM: Option<SimState> = None;
 
-// Global advanced features (optional)
+// Global advanced features (optional, thread-local for safety and consistency)
 thread_local! {
     static AURORA: RefCell<Option<AURORADescriptors>> = RefCell::new(None);
     static LYAPUNOV: RefCell<Option<LyapunovEstimator>> = RefCell::new(None);

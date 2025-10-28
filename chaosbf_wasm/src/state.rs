@@ -354,7 +354,7 @@ impl SimState {
         self.e += de;
 
         // Execute operator
-        self.execute_op(op_byte);
+        self.execute_op(op);
 
         self.ip += 1;
         self.steps += 1;
@@ -389,23 +389,23 @@ impl SimState {
         }
     }
 
-    fn execute_op(&mut self, op: u8) {
+    fn execute_op(&mut self, op: Op) {
         let mem_size = self.mem_size;
 
         match op {
-            b'>' => self.ptr = (self.ptr + 1) % mem_size,
-            b'<' => self.ptr = (self.ptr + mem_size - 1) % mem_size,
-            b'+' => self.mem[self.ptr] = self.mem[self.ptr].wrapping_add(1),
-            b'-' => self.mem[self.ptr] = self.mem[self.ptr].wrapping_sub(1),
-            b'.' => {
+            Op::Gt => self.ptr = (self.ptr + 1) % mem_size,
+            Op::Lt => self.ptr = (self.ptr + mem_size - 1) % mem_size,
+            Op::Plus => self.mem[self.ptr] = self.mem[self.ptr].wrapping_add(1),
+            Op::Minus => self.mem[self.ptr] = self.mem[self.ptr].wrapping_sub(1),
+            Op::Dot => {
                 if self.output_len < MAX_OUTPUT {
                     self.output_buffer[self.output_len] = self.mem[self.ptr];
                     self.output_len += 1;
                 }
             },
-            b',' => self.mem[self.ptr] = 0,
+            Op::Comma => self.mem[self.ptr] = 0,
 
-            b'[' => {
+            Op::LBr => {
                 if self.mem[self.ptr] == 0 {
                     let mut bal = 1usize;
                     while bal > 0 && self.ip + 1 < self.code_len {
@@ -422,7 +422,7 @@ impl SimState {
                 }
             }
 
-            b']' => {
+            Op::RBr => {
                 if self.mem[self.ptr] != 0 && self.stack_ptr > 0 {
                     self.ip = self.stack[self.stack_ptr - 1];
                 } else if self.stack_ptr > 0 {
@@ -430,25 +430,25 @@ impl SimState {
                 }
             }
 
-            b'^' => self.t = (self.t + self.tau).min(2.0),
-            b'v' => self.t = (self.t - self.tau).max(0.01),
-            b':' => {},
-            b';' => self.s += self.slocal,
+            Op::Caret => self.t = (self.t + self.tau).min(2.0),
+            Op::Vee => self.t = (self.t - self.tau).max(0.01),
+            Op::Colon => {},
+            Op::Semi => self.s += self.slocal,
 
-            b'?' => self.mutate_op(),
-            b'*' => self.replicate_op(),
-            b'@' => self.crossover_op(),
-            b'=' => self.learn_op(),
-            b'!' => self.elite_save_op(),
-            b'~' => self.elite_load_op(),
+            Op::Q => self.mutate_op(),
+            Op::Star => self.replicate_op(),
+            Op::At => self.crossover_op(),
+            Op::Eq => self.learn_op(),
+            Op::Bang => self.elite_save_op(),
+            Op::Tilde => self.elite_load_op(),
 
-            b'{' => self.branch_op(),
-            b'}' => {},
+            Op::LCurly => self.branch_op(),
+            Op::RCurly => {},
 
-            b'#' => self.complexity_op(),
-            b'%' => self.info_per_energy_op(),
+            Op::Hash => self.complexity_op(),
+            Op::Percent => self.info_per_energy_op(),
 
-            _ => {}
+            Op::Unknown => {}
         }
     }
 
