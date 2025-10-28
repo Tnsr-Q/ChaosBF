@@ -1,12 +1,19 @@
 [package]
 name = "chaosbf_wasm"
-version = "0.1.0"
+version = "4.0.0"
 edition = "2021"
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+rand = { version = "0.8", features = ["small_rng"] }
+rand_chacha = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 
 [profile.release]
 opt-level = 3
 lto = true
 strip = true
+codegen-units = 1
