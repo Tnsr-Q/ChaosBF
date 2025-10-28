@@ -1,387 +1,72 @@
-//! ChaosBF WASM - Standalone version without external dependencies
-//! Uses raw WASM exports and minimal stdlib
+//! ChaosBF v4.0 WASM - Complete thermodynamic evolution platform
+//!
+//! Features all Phase 2 and 3 advanced capabilities:
+//! - AURORA learned descriptors with InfoNCE contrastive loss
+//! - Lyapunov estimation with bootstrap CI
+//! - Edge-band routing (marginal elite selection)
+//! - Island ecology (multi-population speciation)
+//! - Reproducibility spine (snapshots & manifests)
+//! - Critic-in-the-loop (self-bootstrapping semantics)
+//! - PID + variance shaping dual-loop control
+//! - Metropolis MCMC acceptance
+//! - Landauer-exact costing
 
-#![no_std]
+pub mod rng;
+pub mod state;
+pub mod ops;
+pub mod thermo;
+pub mod aurora;
+pub mod lyapunov;
+pub mod edge_band;
+pub mod island;
+pub mod critic;
+pub mod repro;
 
-use core::panic::PanicInfo;
+use state::SimState;
+use aurora::AURORADescriptors;
+use lyapunov::LyapunovEstimator;
+use edge_band::EdgeBandRouter;
+use island::IslandEcology;
+use critic::CriticEvolution;
+use repro::ReproSpine;
 
-#[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
-    loop {}
-}
+use std::cell::RefCell;
 
-// Simple LCG PRNG (no external deps)
-struct Rng {
-    state: u64,
-}
-
-impl Rng {
-    fn new(seed: u64) -> Self {
-        Self { state: seed }
-    }
-
-    fn next_u32(&mut self) -> u32 {
-        self.state = self.state.wrapping_mul(6364136223846793005)
-                              .wrapping_add(1442695040888963407);
-        (self.state >> 32) as u32
-    }
-
-    fn gen_f32(&mut self) -> f32 {
-        (self.next_u32() >> 8) as f32 / 16777216.0
-    }
-
-    fn gen_range(&mut self, min: usize, max: usize) -> usize {
-        if max <= min {
-            return min;
-        }
-        min + (self.next_u32() as usize) % (max - min)
-    }
-}
-
-// Global simulation state (single instance)
+// ============================================================================
+// Global State Management
+// ============================================================================
+//
+// SAFETY: The static mut SIM is safe in the WASM single-threaded context.
+// WASM runs in a single-threaded environment (no SharedArrayBuffer), making
+// static mut access race-free. We use static mut here instead of thread_local!
+// for performance and simplicity in extern "C" functions.
+//
+// The advanced features use thread_local! + RefCell for:
+// 1. Consistency with Rust best practices
+// 2. Optional/lazy initialization
+// 3. Future-proofing if WASM threading is needed
+//
+// Static mut return buffers (METRICS, DESC, STATS) are used in multiple
+// functions to provide stable pointers to JavaScript. These are safe because:
+// - WASM is single-threaded (no concurrent access)
+// - Each function fills its buffer before returning the pointer
+// - JavaScript consumes the data before the next call
 static mut SIM: Option<SimState> = None;
 
-const MAX_MEM: usize = 65536;
-const MAX_CODE: usize = 4096;
-const MAX_STACK: usize = 256;
-const MAX_BANK: usize = 100;
-const MAX_ELITE: usize = 50;
-const MAX_BRANCH_HIST: usize = 200;
-
-struct SimState {
-    // Memory
-    mem: [u8; MAX_MEM],
-    mem_size: usize,
-    ptr: usize,
-
-    // Program
-    code: [u8; MAX_CODE],
-    code_len: usize,
-    ip: usize,
-
-    // Loop stack
-    stack: [usize; MAX_STACK],
-    stack_ptr: usize,
-
-    // Thermodynamics
-    e: f32,
-    t: f32,
-    s: f32,
-    f: f32,
-
-    // Evolution
-    genome_bank: [[u8; MAX_CODE]; MAX_BANK],
-    genome_lens: [usize; MAX_BANK],
-    bank_size: usize,
-
-    elite: [[u8; MAX_CODE]; MAX_ELITE],
-    elite_lens: [usize; MAX_ELITE],
-    elite_size: usize,
-
-    // Metrics
-    lambda_hat: f32,
-    branch_hist: [u32; MAX_BRANCH_HIST],
-    branch_hist_ptr: usize,
-    steps: u32,
-
-    // Settings
-    tau: f32,
-    theta_rep: f32,
-    landauer_win: usize,
-    slocal: f32,
-
-    // Stats
-    mutations: u32,
-    replications: u32,
-    crossovers: u32,
-    learns: u32,
-
-    // RNG
-    rng: Rng,
+// Global advanced features (optional, thread-local for safety and consistency)
+thread_local! {
+    static AURORA: RefCell<Option<AURORADescriptors>> = RefCell::new(None);
+    static LYAPUNOV: RefCell<Option<LyapunovEstimator>> = RefCell::new(None);
+    static EDGE_BAND: RefCell<Option<EdgeBandRouter>> = RefCell::new(None);
+    static ECOLOGY: RefCell<Option<IslandEcology>> = RefCell::new(None);
+    static CRITIC: RefCell<Option<CriticEvolution>> = RefCell::new(None);
+    static REPRO: RefCell<Option<ReproSpine>> = RefCell::new(None);
 }
 
-impl SimState {
-    fn new() -> Self {
-        Self {
-            mem: [0; MAX_MEM],
-            mem_size: 0,
-            ptr: 0,
-            code: [0; MAX_CODE],
-            code_len: 0,
-            ip: 0,
-            stack: [0; MAX_STACK],
-            stack_ptr: 0,
-            e: 200.0,
-            t: 0.6,
-            s: 0.0,
-            f: 200.0,
-            genome_bank: [[0; MAX_CODE]; MAX_BANK],
-            genome_lens: [0; MAX_BANK],
-            bank_size: 0,
-            elite: [[0; MAX_CODE]; MAX_ELITE],
-            elite_lens: [0; MAX_ELITE],
-            elite_size: 0,
-            lambda_hat: 1.0,
-            branch_hist: [0; MAX_BRANCH_HIST],
-            branch_hist_ptr: 0,
-            steps: 0,
-            tau: 0.1,
-            theta_rep: 6.0,
-            landauer_win: 16,
-            slocal: 0.0,
-            mutations: 0,
-            replications: 0,
-            crossovers: 0,
-            learns: 0,
-            rng: Rng::new(12345),
-        }
-    }
+// ============================================================================
+// Basic WASM Interface
+// ============================================================================
 
-    fn branching_factor(&self) -> f32 {
-        if self.branch_hist_ptr == 0 {
-            return 1.0;
-        }
-        let sum: u32 = self.branch_hist[..self.branch_hist_ptr].iter().sum();
-        sum as f32 / self.branch_hist_ptr as f32
-    }
-
-    fn sense_entropy(&self) -> f32 {
-        let w = 8;
-        let a = self.ptr.saturating_sub(w);
-        let b = (self.ptr + w + 1).min(self.mem_size);
-        local_entropy(&self.mem[a..b])
-    }
-}
-
-fn local_entropy(bytes: &[u8]) -> f32 {
-    if bytes.is_empty() {
-        return 0.0;
-    }
-
-    let mut hist = [0u16; 256];
-    for &b in bytes {
-        hist[b as usize] = hist[b as usize].saturating_add(1);
-    }
-
-    let n = bytes.len() as f32;
-    let mut h = 0.0;
-
-    for &count in hist.iter() {
-        if count == 0 { continue; }
-        let p = (count as f32) / n;
-        // Simple log approximation
-        h -= p * fast_ln(p);
-    }
-
-    h
-}
-
-// Fast ln approximation
-fn fast_ln(x: f32) -> f32 {
-    if x <= 0.0 { return -10.0; }
-    let mut y = x;
-    let mut log = 0.0;
-
-    while y > 2.0 {
-        y /= 2.0;
-        log += 0.69314718; // ln(2)
-    }
-
-    let z = y - 1.0;
-    z - 0.5 * z * z + 0.333 * z * z * z
-    + log
-}
-
-fn delta_e(op: u8, depth: usize, slocal: f32) -> f32 {
-    let leak = if matches!(op, b'[' | b']' | b'{' | b'}') {
-        1.0 + (depth as f32) / 3.0
-    } else {
-        0.0
-    };
-
-    let base = match op {
-        b'>' | b'<' => -1.0,
-        b'+' => -2.0,
-        b'-' => 1.0,
-        b'.' | b',' => -1.0,
-        b'^' | b'v' => -1.0,
-        b':' => 0.0,
-        b';' => -slocal,
-        b'?' => -2.0,
-        b'*' => -10.0,
-        b'@' => -6.0,
-        b'=' => 0.0,
-        b'!' => -1.0,
-        b'{' => -2.0,
-        b'}' => 0.0,
-        b'#' => 0.0,
-        b'%' => -1.0,
-        b'~' => 5.0,
-        _ => 0.0,
-    };
-    base - leak
-}
-
-const OPS: &[u8] = b"><+-[].,^v:;?*@=!{}#%~";
-
-fn execute_op(sim: &mut SimState, op: u8) {
-    let mem_size = sim.mem_size;
-
-    match op {
-        b'>' => sim.ptr = (sim.ptr + 1) % mem_size,
-        b'<' => sim.ptr = (sim.ptr + mem_size - 1) % mem_size,
-        b'+' => sim.mem[sim.ptr] = sim.mem[sim.ptr].wrapping_add(1),
-        b'-' => sim.mem[sim.ptr] = sim.mem[sim.ptr].wrapping_sub(1),
-        b'.' => {},
-        b',' => sim.mem[sim.ptr] = 0,
-
-        b'[' => {
-            if sim.mem[sim.ptr] == 0 {
-                let mut bal = 1usize;
-                while bal > 0 && sim.ip + 1 < sim.code_len {
-                    sim.ip += 1;
-                    match sim.code[sim.ip] {
-                        b'[' => bal += 1,
-                        b']' => bal -= 1,
-                        _ => {}
-                    }
-                }
-            } else if sim.stack_ptr < MAX_STACK {
-                sim.stack[sim.stack_ptr] = sim.ip;
-                sim.stack_ptr += 1;
-            }
-        }
-
-        b']' => {
-            if sim.mem[sim.ptr] != 0 && sim.stack_ptr > 0 {
-                sim.ip = sim.stack[sim.stack_ptr - 1];
-            } else if sim.stack_ptr > 0 {
-                sim.stack_ptr -= 1;
-            }
-        }
-
-        b'^' => sim.t = (sim.t + sim.tau).min(2.0),
-        b'v' => sim.t = (sim.t - sim.tau).max(0.01),
-        b':' => {},
-        b';' => sim.s += sim.slocal,
-
-        b'?' => {
-            let p_mut = (0.2 + 0.6 * sim.t).min(0.95);
-            if sim.rng.gen_f32() < p_mut && sim.code_len > 0 {
-                let i = sim.rng.gen_range(0, sim.code_len);
-                sim.code[i] = OPS[sim.rng.gen_range(0, OPS.len())];
-                sim.mutations += 1;
-            }
-        }
-
-        b'*' => {
-            if sim.f > sim.theta_rep && sim.bank_size < MAX_BANK {
-                // Add to bank
-                sim.genome_bank[sim.bank_size][..sim.code_len].copy_from_slice(&sim.code[..sim.code_len]);
-                sim.genome_lens[sim.bank_size] = sim.code_len;
-                sim.bank_size += 1;
-
-                // Mutation burst
-                let burst = ((sim.t * 3.0).max(1.0) as usize).min(sim.code_len);
-                for _ in 0..burst {
-                    if sim.code_len > 0 {
-                        let i = sim.rng.gen_range(0, sim.code_len);
-                        sim.code[i] = OPS[sim.rng.gen_range(0, OPS.len())];
-                    }
-                }
-
-                sim.replications += 1;
-            }
-        }
-
-        b'@' => {
-            if sim.bank_size > 0 && sim.code_len > 2 {
-                let idx = sim.rng.gen_range(0, sim.bank_size);
-                let mate_len = sim.genome_lens[idx];
-                let k = sim.code_len.min(mate_len);
-
-                if k > 2 {
-                    let cut = sim.rng.gen_range(1, k);
-                    // Crossover
-                    sim.code[cut..k].copy_from_slice(&sim.genome_bank[idx][cut..k]);
-                }
-
-                sim.crossovers += 1;
-            }
-        }
-
-        b'=' => {
-            // Simple peephole optimization
-            let mut opt = [0u8; MAX_CODE];
-            let mut opt_len = 0;
-            let mut i = 0;
-
-            while i < sim.code_len {
-                if i + 1 < sim.code_len {
-                    let pair = (sim.code[i], sim.code[i + 1]);
-                    match pair {
-                        (b'+', b'-') | (b'-', b'+') | (b'>', b'<') | (b'<', b'>') => {
-                            i += 2;
-                            continue;
-                        }
-                        _ => {}
-                    }
-                }
-                if opt_len < MAX_CODE {
-                    opt[opt_len] = sim.code[i];
-                    opt_len += 1;
-                }
-                i += 1;
-            }
-
-            let saved = sim.code_len.saturating_sub(opt_len);
-            if saved > 0 {
-                sim.code[..opt_len].copy_from_slice(&opt[..opt_len]);
-                sim.code_len = opt_len;
-                sim.e += (saved as f32) * 0.5;
-                sim.learns += 1;
-            }
-        }
-
-        b'!' => {
-            if sim.e > 50.0 && sim.s > 1.0 && sim.elite_size < MAX_ELITE {
-                sim.elite[sim.elite_size][..sim.code_len].copy_from_slice(&sim.code[..sim.code_len]);
-                sim.elite_lens[sim.elite_size] = sim.code_len;
-                sim.elite_size += 1;
-            }
-        }
-
-        b'{' => {
-            let p_branch = (0.3 + 0.4 * sim.t).min(0.9);
-            if sim.rng.gen_f32() < p_branch {
-                sim.mem[sim.ptr] ^= 1;
-                if sim.branch_hist_ptr < MAX_BRANCH_HIST {
-                    sim.branch_hist[sim.branch_hist_ptr] = 1;
-                    sim.branch_hist_ptr += 1;
-                }
-            } else if sim.branch_hist_ptr < MAX_BRANCH_HIST {
-                sim.branch_hist[sim.branch_hist_ptr] = 0;
-                sim.branch_hist_ptr += 1;
-            }
-        }
-
-        b'~' => {
-            if sim.f < 0.0 && sim.elite_size > 0 {
-                let idx = sim.rng.gen_range(0, sim.elite_size);
-                let elite_len = sim.elite_lens[idx];
-                sim.code[..elite_len].copy_from_slice(&sim.elite[idx][..elite_len]);
-                sim.code_len = elite_len;
-                sim.t *= 0.8;
-                sim.ip = 0;
-                sim.stack_ptr = 0;
-            }
-        }
-
-        _ => {}
-    }
-}
-
-// WASM exports
 #[no_mangle]
 pub extern "C" fn init_sim(
     seed: u64,
@@ -393,18 +78,14 @@ pub extern "C" fn init_sim(
     t0: f32,
 ) {
     unsafe {
-        let mut sim = SimState::new();
-        sim.rng = Rng::new(seed);
-        sim.mem_size = width * height;
-        sim.e = e0;
-        sim.t = t0;
+        let code_slice = std::slice::from_raw_parts(code_ptr, code_len.min(4096));
+        let code = code_slice.to_vec();
 
-        // Copy code
-        let code_slice = core::slice::from_raw_parts(code_ptr, code_len.min(MAX_CODE));
-        sim.code_len = code_slice.len();
-        sim.code[..sim.code_len].copy_from_slice(code_slice);
+        let mut state = SimState::new(seed, width, height, code);
+        state.e = e0;
+        state.t = t0;
 
-        SIM = Some(sim);
+        SIM = Some(state);
     }
 }
 
@@ -417,23 +98,15 @@ pub extern "C" fn step_sim(ticks: u32) {
                     break;
                 }
 
-                sim.ip = sim.ip % sim.code_len;
-                let op = sim.code[sim.ip];
+                sim.step();
 
-                if op == b':' {
-                    sim.slocal = sim.sense_entropy();
-                }
-
-                sim.e += delta_e(op, sim.stack_ptr, sim.slocal);
-
-                execute_op(sim, op);
-
-                sim.ip += 1;
-                sim.steps += 1;
-                sim.f = sim.e - sim.t * sim.s;
+                // Auto-snapshot if repro spine enabled
+                REPRO.with(|r| {
+                    if let Some(repro) = r.borrow_mut().as_mut() {
+                        repro.maybe_snapshot(sim);
+                    }
+                });
             }
-
-            sim.lambda_hat = sim.branching_factor();
         }
     }
 }
@@ -444,7 +117,7 @@ pub extern "C" fn get_mem_ptr() -> *const u8 {
         if let Some(sim) = &SIM {
             sim.mem.as_ptr()
         } else {
-            core::ptr::null()
+            std::ptr::null()
         }
     }
 }
@@ -452,7 +125,7 @@ pub extern "C" fn get_mem_ptr() -> *const u8 {
 #[no_mangle]
 pub extern "C" fn get_metrics_ptr() -> *const f32 {
     unsafe {
-        static mut METRICS: [f32; 10] = [0.0; 10];
+        static mut METRICS: [f32; 20] = [0.0; 20];
 
         if let Some(sim) = &SIM {
             METRICS[0] = sim.steps as f32;
@@ -465,8 +138,330 @@ pub extern "C" fn get_metrics_ptr() -> *const f32 {
             METRICS[7] = sim.replications as f32;
             METRICS[8] = sim.crossovers as f32;
             METRICS[9] = sim.learns as f32;
+            METRICS[10] = sim.lambda_volatility;
+            METRICS[11] = sim.ds_dt_ema;
+            METRICS[12] = sim.dk_dt_ema;
+            METRICS[13] = sim.complexity_estimate;
+            METRICS[14] = sim.info_per_energy;
+            METRICS[15] = sim.bank_size as f32;
+            METRICS[16] = sim.output_len as f32;
+            METRICS[17] = sim.pid_kp;
+            METRICS[18] = sim.variance_gamma;
+            METRICS[19] = sim.use_pid as i32 as f32;
         }
 
         METRICS.as_ptr()
+    }
+}
+
+// ============================================================================
+// AURORA Interface
+// ============================================================================
+
+#[no_mangle]
+pub extern "C" fn aurora_init(trace_length: usize, state_features: usize, latent_dim: usize, seed: u64) {
+    AURORA.with(|a| {
+        *a.borrow_mut() = Some(AURORADescriptors::new(trace_length, state_features, latent_dim, seed));
+    });
+}
+
+#[no_mangle]
+pub extern "C" fn aurora_compute_descriptors() -> *const f32 {
+    unsafe {
+        static mut DESC: [f32; 2] = [0.0; 2];
+
+        if let Some(sim) = &SIM {
+            AURORA.with(|a| {
+                if let Some(aurora) = a.borrow_mut().as_mut() {
+                    let (d1, d2) = aurora.compute_descriptors(sim, true);
+                    DESC[0] = d1;
+                    DESC[1] = d2;
+                }
+            });
+        }
+
+        DESC.as_ptr()
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn aurora_latent_samples_count() -> usize {
+    AURORA.with(|a| {
+        if let Some(aurora) = a.borrow().as_ref() {
+            aurora.latent_samples.len()
+        } else {
+            0
+        }
+    })
+}
+
+// ============================================================================
+// Lyapunov & Edge-Band Interface
+// ============================================================================
+
+#[no_mangle]
+pub extern "C" fn lyapunov_init(perturbation: f32, window_size: usize) {
+    LYAPUNOV.with(|l| {
+        *l.borrow_mut() = Some(LyapunovEstimator::new(perturbation, window_size));
+    });
+}
+
+#[no_mangle]
+pub extern "C" fn edge_band_init(marginal_weight: f32, seed: u64) {
+    EDGE_BAND.with(|e| {
+        *e.borrow_mut() = Some(EdgeBandRouter::new(marginal_weight, seed));
+    });
+}
+
+#[no_mangle]
+pub extern "C" fn edge_band_get_stats_ptr() -> *const f32 {
+    unsafe {
+        static mut STATS: [f32; 5] = [0.0; 5];
+
+        EDGE_BAND.with(|e| {
+            if let Some(router) = e.borrow().as_ref() {
+                let stats = router.get_stats();
+                STATS[0] = stats.critical_stable as f32;
+                STATS[1] = stats.critical_chaotic as f32;
+                STATS[2] = stats.marginal as f32;
+                STATS[3] = stats.total as f32;
+                STATS[4] = stats.marginal_fraction;
+            }
+        });
+
+        STATS.as_ptr()
+    }
+}
+
+// ============================================================================
+// Island Ecology Interface
+// ============================================================================
+
+#[no_mangle]
+pub extern "C" fn ecology_init(n_islands: usize, seed: u64) {
+    // Create default seed genomes
+    let seed_genomes = vec![
+        vec![b'+', b'+', b'[', b'>', b'+', b'<', b'-', b']', b'.'],
+        vec![b':', b'{', b';', b'}', b'{', b'?', b'}', b'^', b'=', b'.'],
+        vec![b'*', b'=', b'@', b'=', b'.', b'#'],
+        vec![b'+', b'[', b'>', b'+', b'<', b'-', b']', b';', b'.'],
+    ];
+
+    ECOLOGY.with(|ec| {
+        *ec.borrow_mut() = Some(IslandEcology::new(n_islands, &seed_genomes, seed));
+    });
+}
+
+#[no_mangle]
+pub extern "C" fn ecology_evolve(steps: u32, migration_interval: u32) {
+    ECOLOGY.with(|ec| {
+        if let Some(ecology) = ec.borrow_mut().as_mut() {
+            ecology.evolve(steps, migration_interval);
+        }
+    });
+}
+
+#[no_mangle]
+pub extern "C" fn ecology_get_stats_ptr() -> *const f32 {
+    unsafe {
+        static mut STATS: [f32; 4] = [0.0; 4];
+
+        ECOLOGY.with(|ec| {
+            if let Some(ecology) = ec.borrow().as_ref() {
+                let (immigrants, emigrants) = ecology.total_migrants();
+                STATS[0] = ecology.generation as f32;
+                STATS[1] = ecology.total_population() as f32;
+                STATS[2] = immigrants as f32;
+                STATS[3] = emigrants as f32;
+            }
+        });
+
+        STATS.as_ptr()
+    }
+}
+
+// ============================================================================
+// Critic Interface
+// ============================================================================
+
+#[no_mangle]
+pub extern "C" fn critic_init(ngram_size: usize, surprise_weight: f32, population_size: usize) {
+    CRITIC.with(|c| {
+        *c.borrow_mut() = Some(CriticEvolution::new(ngram_size, surprise_weight, population_size));
+    });
+}
+
+#[no_mangle]
+pub extern "C" fn critic_compute_fitness() -> *const f32 {
+    unsafe {
+        static mut FITNESS: [f32; 2] = [0.0; 2];
+
+        if let Some(sim) = &SIM {
+            CRITIC.with(|c| {
+                if let Some(critic_evo) = c.borrow().as_ref() {
+                    let base_fitness = sim.e / (sim.steps as f32 + 1.0);
+                    let output = &sim.output_buffer[..sim.output_len];
+                    let (total, surprise_bonus) = critic_evo.compute_fitness_with_critic(base_fitness, output);
+                    FITNESS[0] = total;
+                    FITNESS[1] = surprise_bonus;
+                }
+            });
+        }
+
+        FITNESS.as_ptr()
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn critic_learn_from_output() {
+    unsafe {
+        if let Some(sim) = &SIM {
+            CRITIC.with(|c| {
+                if let Some(critic_evo) = c.borrow_mut().as_mut() {
+                    let output = sim.output_buffer[..sim.output_len].to_vec();
+                    critic_evo.learn_from_population(&[output]);
+                }
+            });
+        }
+    }
+}
+
+// ============================================================================
+// Reproducibility Spine Interface
+// ============================================================================
+
+#[no_mangle]
+pub extern "C" fn repro_init(snapshot_interval: u32, enable_crash_capsule: bool) {
+    REPRO.with(|r| {
+        *r.borrow_mut() = Some(ReproSpine::new(snapshot_interval, enable_crash_capsule));
+    });
+}
+
+#[no_mangle]
+pub extern "C" fn repro_start_run(run_id_ptr: *const u8, run_id_len: usize) {
+    unsafe {
+        if let Some(sim) = &SIM {
+            let run_id_slice = std::slice::from_raw_parts(run_id_ptr, run_id_len);
+            let run_id = String::from_utf8_lossy(run_id_slice).to_string();
+
+            REPRO.with(|r| {
+                if let Some(repro) = r.borrow_mut().as_mut() {
+                    repro.start_run(sim, run_id);
+                }
+            });
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn repro_snapshot() {
+    unsafe {
+        if let Some(sim) = &SIM {
+            REPRO.with(|r| {
+                if let Some(repro) = r.borrow_mut().as_mut() {
+                    repro.snapshot(sim);
+                }
+            });
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn repro_snapshot_count() -> usize {
+    REPRO.with(|r| {
+        if let Some(repro) = r.borrow().as_ref() {
+            repro.snapshot_count()
+        } else {
+            0
+        }
+    })
+}
+
+#[no_mangle]
+pub extern "C" fn repro_rewind(target_step: u32) -> bool {
+    unsafe {
+        if let Some(sim) = &mut SIM {
+            REPRO.with(|r| {
+                if let Some(repro) = r.borrow().as_ref() {
+                    repro.rewind(sim, target_step)
+                } else {
+                    false
+                }
+            })
+        } else {
+            false
+        }
+    }
+}
+
+// ============================================================================
+// Configuration Interface
+// ============================================================================
+
+#[no_mangle]
+pub extern "C" fn set_pid_params(kp: f32, ki: f32, kd: f32, enable: bool) {
+    unsafe {
+        if let Some(sim) = &mut SIM {
+            sim.pid_kp = kp;
+            sim.pid_ki = ki;
+            sim.pid_kd = kd;
+            sim.use_pid = enable;
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn set_variance_shaping(gamma: f32, enable: bool) {
+    unsafe {
+        if let Some(sim) = &mut SIM {
+            sim.variance_gamma = gamma;
+            sim.use_variance_shaping = enable;
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn set_metropolis(enable: bool) {
+    unsafe {
+        if let Some(sim) = &mut SIM {
+            sim.use_metropolis = enable;
+        }
+    }
+}
+
+// ============================================================================
+// Debug/Utility Interface
+// ============================================================================
+
+#[no_mangle]
+pub extern "C" fn get_code_len() -> usize {
+    unsafe {
+        if let Some(sim) = &SIM {
+            sim.code_len
+        } else {
+            0
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn get_output_ptr() -> *const u8 {
+    unsafe {
+        if let Some(sim) = &SIM {
+            sim.output_buffer.as_ptr()
+        } else {
+            std::ptr::null()
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn get_output_len() -> usize {
+    unsafe {
+        if let Some(sim) = &SIM {
+            sim.output_len
+        } else {
+            0
+        }
     }
 }
