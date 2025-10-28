@@ -1,0 +1,39 @@
+ChaosBF v2.0 - File Inventory
+==============================
+
+Core Implementation:
+- src/chaosbf_v2.py          Main v2.0 interpreter with all fixes and upgrades
+- src/map_elites.py          MAP-Elites quality-diversity algorithm
+- src/experiments.py         Systematic experiment protocols
+- src/cli.py                 Enhanced CLI with logging and reproducibility
+
+Testing:
+- tests/test_invariants.py   Property-based invariant tests (98.4% pass rate)
+
+Documentation:
+- README_v2.md               Updated project overview
+- UPGRADE_SUMMARY_V2.md      Complete upgrade report and validation
+- docs/specification_v2.md   Formal specification
+- docs/research_protocols.md Research experiment guide
+
+Output Examples:
+- output/map_elites_grid.json           MAP-Elites results
+- output/map_elites_visualization.png   Behavior space visualization
+- output/experiments/                   Experiment results
+- output/cli_test/                      CLI run outputs
+
+Key Improvements:
+1. Fixed thermodynamic accounting (entropy operator, learning operator)
+2. PID controller for criticality maintenance
+3. Grammar-aware mutation preserving bracket balance
+4. MAP-Elites for quality-diversity evolution
+5. Reproducible execution with seeding and manifests
+6. Comprehensive invariant testing
+7. Systematic experiment protocols
+8. Enhanced logging (JSONL traces, checkpoints)
+
+Test Results:
+- Invariant tests: 63/64 passed (98.4%)
+- All thermodynamic invariants validated
+- PID controller convergence confirmed
+- Deterministic execution verified

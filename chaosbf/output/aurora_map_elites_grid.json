@@ -1,0 +1,227 @@
+{
+  "config": {
+    "bins_per_dim": 16,
+    "total_cells": 16777216,
+    "use_whitening": true,
+    "use_adaptive_emitters": true,
+    "aurora_trained": false
+  },
+  "stats": {
+    "evaluations": 204,
+    "improvements": 27,
+    "grid_size": 14,
+    "coverage": 8.344650268554688e-07
+  },
+  "elites": {
+    "8,8,8,8,8,8": {
+      "genome": "++[>+<-].:{;}{?}^*=@=.#%",
+      "fitness": 0.0,
+      "lambda_dev": 0.16666680555553248,
+      "info_per_energy": 0.0,
+      "entropy_slope": 0.01696418041483301,
+      "volatility": 0.0785673677535771,
+      "stats": {
+        "aurora_desc": [
+          0.0,
+          0.0
+        ]
+      },
+      "ancestor_id": 0
+    },
+    "8,8,0,15,15,0": {
+      "genome": ":+!?+<#<;.#",
+      "fitness": 0.8828956279111682,
+      "lambda_dev": 0.0,
+      "info_per_energy": 0.8828956279111682,
+      "entropy_slope": 0.7015172377075871,
+      "volatility": 0.0,
+      "stats": {
+        "aurora_desc": [
+          0.0,
+          0.0
+        ]
+      },
+      "ancestor_id": 141
+    },
+    "8,8,15,0,0,0": {
+      "genome": "{?}{?}{?}^=v=.#",
+      "fitness": 0.0,
+      "lambda_dev": 0.5588235423875428,
+      "info_per_energy": 0.0,
+      "entropy_slope": 0.0,
+      "volatility": 0.055691240163987424,
+      "stats": {
+        "aurora_desc": [
+          0.0,
+          0.0
+        ]
+      },
+      "ancestor_id": 2
+    },
+    "8,8,0,0,0,0": {
+      "genome": "+?}{?}.?}^===.#",
+      "fitness": 0.1,
+      "lambda_dev": 0.18181825619834024,
+      "info_per_energy": 0.1,
+      "entropy_slope": 0.0,
+      "volatility": 0.035154353932663494,
+      "stats": {
+        "aurora_desc": [
+          0.0,
+          0.0
+        ]
+      },
+      "ancestor_id": 88
+    },
+    "8,8,15,0,0,15": {
+      "genome": "{>}{?}{?}^=v=.#",
+      "fitness": 0.18000000000000002,
+      "lambda_dev": 0.6279069853975119,
+      "info_per_energy": 0.18000000000000002,
+      "entropy_slope": 0.0,
+      "volatility": 0.04634957061132241,
+      "stats": {
+        "aurora_desc": [
+          0.0,
+          0.0
+        ]
+      },
+      "ancestor_id": 66
+    },
+    "8,8,0,15,0,0": {
+      "genome": "-+[>+<-],..",
+      "fitness": 1.6865113581384268,
+      "lambda_dev": 0.0,
+      "info_per_energy": 1.6865113581384268,
+      "entropy_slope": 0.0,
+      "volatility": 0.0,
+      "stats": {
+        "aurora_desc": [
+          0.0,
+          0.0
+        ]
+      },
+      "ancestor_id": 107
+    },
+    "8,8,15,15,0,0": {
+      "genome": "{?}^?}.?}^!==.#",
+      "fitness": 1.0146979840000003,
+      "lambda_dev": 1.0,
+      "info_per_energy": 1.0146979840000003,
+      "entropy_slope": 0.0,
+      "volatility": 0.0,
+      "stats": {
+        "aurora_desc": [
+          0.0,
+          0.0
+        ]
+      },
+      "ancestor_id": 196
+    },
+    "8,8,15,0,15,0": {
+      "genome": "++[>+<-,.:{;@{?}^*=@?.#%",
+      "fitness": 0.0,
+      "lambda_dev": 0.3333334444444259,
+      "info_per_energy": 0.0,
+      "entropy_slope": 0.13756495718186243,
+      "volatility": 0.0,
+      "stats": {
+        "aurora_desc": [
+          0.0,
+          0.0
+        ]
+      },
+      "ancestor_id": 31
+    },
+    "8,8,15,15,0,15": {
+      "genome": "{?}{?}.?}^==v.#",
+      "fitness": 0.7402216448000001,
+      "lambda_dev": 0.6428571683673451,
+      "info_per_energy": 0.7402216448000001,
+      "entropy_slope": 0.0,
+      "volatility": 0.06928995133196388,
+      "stats": {
+        "aurora_desc": [
+          0.0,
+          0.0
+        ]
+      },
+      "ancestor_id": 135
+    },
+    "8,8,0,0,0,15": {
+      "genome": "{>}{?~{?}^=>=.-",
+      "fitness": 0.0,
+      "lambda_dev": 0.3076923210059169,
+      "info_per_energy": 0.0,
+      "entropy_slope": 0.0,
+      "volatility": 0.06468449156396872,
+      "stats": {
+        "aurora_desc": [
+          0.0,
+          0.0
+        ]
+      },
+      "ancestor_id": 67
+    },
+    "8,8,0,0,15,15": {
+      "genome": "++[>+<-].:{;}{?.^*=@=.#%",
+      "fitness": 0.0,
+      "lambda_dev": 0.10000008999999088,
+      "info_per_energy": 0.0,
+      "entropy_slope": 0.04138315820389929,
+      "volatility": 0.06249992968752438,
+      "stats": {
+        "aurora_desc": [
+          0.0,
+          0.0
+        ]
+      },
+      "ancestor_id": 68
+    },
+    "8,8,15,0,15,15": {
+      "genome": "++[>+<-]::{;}{?}>:=@~.#%",
+      "fitness": 0.0,
+      "lambda_dev": 0.3333334444444259,
+      "info_per_energy": 0.0,
+      "entropy_slope": 0.02554216177765069,
+      "volatility": 0.15713471586536007,
+      "stats": {
+        "aurora_desc": [
+          0.0,
+          0.0
+        ]
+      },
+      "ancestor_id": 73
+    },
+    "8,8,0,0,15,0": {
+      "genome": ":+[>+<--;-#",
+      "fitness": 0.0,
+      "lambda_dev": 0.0,
+      "info_per_energy": 0.0,
+      "entropy_slope": 0.8086459777752443,
+      "volatility": 0.0,
+      "stats": {
+        "aurora_desc": [
+          0.0,
+          0.0
+        ]
+      },
+      "ancestor_id": 80
+    },
+    "8,8,0,15,0,15": {
+      "genome": "^>:{?}{?}^=v=.#",
+      "fitness": 0.34400000000000003,
+      "lambda_dev": 0.1333333911111072,
+      "info_per_energy": 0.34400000000000003,
+      "entropy_slope": 0.0,
+      "volatility": 0.13895527800825408,
+      "stats": {
+        "aurora_desc": [
+          0.0,
+          0.0
+        ]
+      },
+      "ancestor_id": 101
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "trace_length": 50,
+  "state_features": 10,
+  "latent_dim": 2,
+  "is_trained": true
+}

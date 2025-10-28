@@ -1,0 +1,117 @@
+[
+  {
+    "genome": "++[>+<-].:{;}{?}^*=@=.#%",
+    "lambda_lyapunov": -0.0098093401908685,
+    "divergence": 0.18503569754241997,
+    "steps_A": 172,
+    "steps_B": 189,
+    "lambda_target_A": 0.8333331944444675,
+    "lambda_target_B": 0.99999950000025,
+    "volatility_A": 0.0785673677535771,
+    "volatility_B": 0.0,
+    "descriptors_A": {
+      "lambda_dev": 0.16666680555553248,
+      "info_per_energy": 0.0,
+      "entropy_slope": 0.01696418041483301,
+      "volatility": 0.0785673677535771
+    },
+    "descriptors_B": {
+      "lambda_dev": 4.999997500476638e-07,
+      "info_per_energy": 0.0,
+      "entropy_slope": 1.849157878179867e-06,
+      "volatility": 0.0
+    }
+  },
+  {
+    "genome": ":+[>+<-];.#",
+    "lambda_lyapunov": -0.02101052939944517,
+    "divergence": 0.005574231817778441,
+    "steps_A": 247,
+    "steps_B": 247,
+    "lambda_target_A": 1.0,
+    "lambda_target_B": 1.0,
+    "volatility_A": 0.0,
+    "volatility_B": 0.0,
+    "descriptors_A": {
+      "lambda_dev": 0.0,
+      "info_per_energy": 0.35645623331780363,
+      "entropy_slope": 0.48793498012746017,
+      "volatility": 0.0
+    },
+    "descriptors_B": {
+      "lambda_dev": 0.0,
+      "info_per_energy": 0.35645623331780363,
+      "entropy_slope": 0.48236074830968173,
+      "volatility": 0.0
+    }
+  },
+  {
+    "genome": "{?}{?}{?}^=v=.#",
+    "lambda_lyapunov": -0.014287239553722927,
+    "divergence": 0.11077713472385951,
+    "steps_A": 154,
+    "steps_B": 160,
+    "lambda_target_A": 0.5312499833984381,
+    "lambda_target_B": 0.42424241138659363,
+    "volatility_A": 0.015891369588781158,
+    "volatility_B": 0.044543648900522696,
+    "descriptors_A": {
+      "lambda_dev": 0.4687500166015619,
+      "info_per_energy": 0.0,
+      "entropy_slope": 0.0,
+      "volatility": 0.015891369588781158
+    },
+    "descriptors_B": {
+      "lambda_dev": 0.5757575886134063,
+      "info_per_energy": 0.0,
+      "entropy_slope": 0.0,
+      "volatility": 0.044543648900522696
+    }
+  },
+  {
+    "genome": "*=@=:{;}#%",
+    "lambda_lyapunov": -0.021339997634992426,
+    "divergence": 0.15957523158030182,
+    "steps_A": 86,
+    "steps_B": 91,
+    "lambda_target_A": 0.3571428316326549,
+    "lambda_target_B": 0.44444439506173394,
+    "volatility_A": 0.0,
+    "volatility_B": 0.0,
+    "descriptors_A": {
+      "lambda_dev": 0.6428571683673451,
+      "info_per_energy": 0.0,
+      "entropy_slope": 0.13362030454419382,
+      "volatility": 0.0
+    },
+    "descriptors_B": {
+      "lambda_dev": 0.5555556049382661,
+      "info_per_energy": 0.0,
+      "entropy_slope": 4.376634700347682e-05,
+      "volatility": 0.0
+    }
+  },
+  {
+    "genome": "+++[>+++<-]>{?}*=@.#%",
+    "lambda_lyapunov": -0.004951054861141574,
+    "divergence": 0.499999750000125,
+    "steps_A": 152,
+    "steps_B": 140,
+    "lambda_target_A": 0.0,
+    "lambda_target_B": 0.499999750000125,
+    "volatility_A": 0.0,
+    "volatility_B": 0.0,
+    "descriptors_A": {
+      "lambda_dev": 1.0,
+      "info_per_energy": 0.0,
+      "entropy_slope": 0.0,
+      "volatility": 0.0
+    },
+    "descriptors_B": {
+      "lambda_dev": 0.500000249999875,
+      "info_per_energy": 0.0,
+      "entropy_slope": 0.0,
+      "volatility": 0.0
+    }
+  }
+]
