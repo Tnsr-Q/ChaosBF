@@ -378,6 +378,7 @@
 
         // Return buffer ownership to worker
         worker.postMessage({ type: 'frame_ack' }, [frame.buffer]);
+        // TODO: Ensure the worker handles 'frame_ack' messages to reclaim buffer ownership and prevent memory leaks.
       } else if (type === 'error') {
         console.error('Worker error:', error);
         running = false;
