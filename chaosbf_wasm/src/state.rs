@@ -229,7 +229,7 @@ impl SimState {
     }
 
     #[inline]
-    fn update_free_energy(&mut self) {
+    pub fn update_free_energy(&mut self) {
         self.f = self.e - self.t * self.s;
     }
 
