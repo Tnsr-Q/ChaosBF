@@ -1,0 +1,8 @@
+target/
+pkg/
+www/pkg/*
+!www/pkg/chaosbf_wasm.wasm
+node_modules/
+.DS_Store
+*.log
+Cargo.lock
