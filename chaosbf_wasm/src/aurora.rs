@@ -153,8 +153,8 @@ impl TinyAutoencoder {
             }
         }
 
-        // TODO: Full backprop gradient descent (simplified for now)
-        // In production, this would compute gradients and update all weights
+        // NOTE: This implementation does NOT update weights; it only computes and returns the loss.
+        // This is intentional for the initial implementation. In production, this method should compute gradients and update all weights.
 
         self.losses.push(total_loss);
         total_loss
