@@ -171,15 +171,15 @@ impl Island {
 
         for local in &local_descriptors {
             for global in global_descriptors {
-                let dist = (0..4).map(|i| (local[i] - global[i]).powi(2))
-                    .sum::<f32>()
-                    .sqrt();
-                total_dist += dist;
+                let sq_dist = (0..4).map(|i| (local[i] - global[i]).powi(2))
+                    .sum::<f32>();
+                total_dist += sq_dist;
                 count += 1;
             }
         }
 
-        let avg_dist = if count > 0 { total_dist / count as f32 } else { 0.0 };
+        let avg_sq_dist = if count > 0 { total_dist / count as f32 } else { 0.0 };
+        let avg_dist = avg_sq_dist.sqrt();
 
         // Deficit = inverse of novelty (low distance = high deficit)
         1.0 / (avg_dist + 0.1)
