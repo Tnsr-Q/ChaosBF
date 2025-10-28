@@ -2,6 +2,16 @@
 
 This document describes the dependencies and toolchain requirements for the ChaosBF project.
 
+## Quick Verification
+
+To verify your environment is correctly set up, run:
+
+```bash
+./verify-environment.sh
+```
+
+This will check all dependencies and confirm everything is working correctly.
+
 ## Python Dependencies
 
 ChaosBF is primarily a Python project requiring Python 3.8 or higher.
@@ -73,10 +83,9 @@ rustup target list | grep wasm32
    pip install -r requirements.txt
    ```
 
-2. Verify Rust installation:
+2. Verify your complete environment setup:
    ```bash
-   rustc --version
-   cargo --version
+   ./verify-environment.sh
    ```
 
 3. Run the quick start script:
