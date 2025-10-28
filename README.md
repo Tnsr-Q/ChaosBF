@@ -169,6 +169,51 @@ ChaosBF demonstrates mastery across **10 frontier domains**:
 </table>
 
 ---
+sequenceDiagram
+    participant Host as Host (JS)
+    participant WASM as WASM Module
+    participant SIM as Global SIM
+    participant Sub as Subsystems (AURORA, Lyapunov, Critic, EdgeBand, Ecology, Repro)
+
+    Host->>WASM: init_sim(seed,width,height,code,params)
+    WASM->>SIM: create SimState, store global SIM
+    WASM->>Sub: optional subsystem inits (aurora_init, lyapunov_init, ...)
+
+    loop runtime
+        Host->>WASM: step_sim(ticks)
+        WASM->>SIM: for ticks: SimState::step()
+        SIM->>SIM: fetch-decode-execute, energy & PID updates, evolutionary ops
+        SIM->>Sub: update descriptors / compute lyapunov / critic scoring (periodic)
+    end
+
+    Host->>WASM: get_metrics_ptr()/get_output_ptr()
+    WASM->>Host: return pointers to internal buffers
+
+    opt reproducibility
+        Host->>WASM: repro_snapshot() / repro_rewind(target)
+        WASM->>Sub: ReproSpine handles snapshot/restore
+    end
+
+sequenceDiagram
+    participant Ecology as IslandEcology
+    participant I1 as Island 1
+    participant I2 as Island 2
+
+    Ecology->>I1: evolve(steps)
+    I1->>I1: local evolution, compute descriptors
+    Ecology->>I2: evolve(steps)
+    I2->>I2: local evolution, compute descriptors
+
+    Ecology->>Ecology: determine migration_interval reached?
+    Note over Ecology: Migration phase - collect elites & descriptors
+    Ecology->>I1: get_elites(n)
+    I1-->>Ecology: top migrants
+    Ecology->>I2: get_elites(n)
+    I2-->>Ecology: top migrants
+
+    Ecology->>Ecology: compute novelty deficits, route migrants
+    Ecology->>I2: accept_immigrant(migrant from I1)
+    I2->>I2: incorporate immigrant
 
 ## Architecture
 
