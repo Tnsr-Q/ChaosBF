@@ -169,6 +169,8 @@ ChaosBF demonstrates mastery across **10 frontier domains**:
 </table>
 
 ---
+
+
 sequenceDiagram
     participant Host as Host (JS)
     participant WASM as WASM Module
@@ -193,7 +195,6 @@ sequenceDiagram
         Host->>WASM: repro_snapshot() / repro_rewind(target)
         WASM->>Sub: ReproSpine handles snapshot/restore
     end
-
 sequenceDiagram
     participant Ecology as IslandEcology
     participant I1 as Island 1
@@ -214,6 +215,7 @@ sequenceDiagram
     Ecology->>Ecology: compute novelty deficits, route migrants
     Ecology->>I2: accept_immigrant(migrant from I1)
     I2->>I2: incorporate immigrant
+
 
 ## Architecture
 
