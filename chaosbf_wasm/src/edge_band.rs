@@ -1,11 +1,10 @@
 use crate::lyapunov::{TaggedElite, EdgeTag};
-use rand::{Rng, SeedableRng};
-use rand_chacha::ChaCha20Rng;
+use crate::rng::Rng;
 
 /// Routes emitters to spawn offspring around marginal elites
 pub struct EdgeBandRouter {
     marginal_weight: f32,
-    rng: ChaCha20Rng,
+    rng: Rng,
 
     // Statistics
     pub critical_stable: u32,
@@ -17,7 +16,7 @@ impl EdgeBandRouter {
     pub fn new(marginal_weight: f32, seed: u64) -> Self {
         Self {
             marginal_weight,
-            rng: ChaCha20Rng::seed_from_u64(seed),
+            rng: Rng::from_seed(seed),
             critical_stable: 0,
             critical_chaotic: 0,
             marginal: 0,
@@ -69,9 +68,9 @@ impl EdgeBandRouter {
 
                 if marginal.is_empty() {
                     // Fallback to random
-                    Some(&elites[self.rng.gen_range(0..elites.len())])
+                    Some(&elites[self.rng.gen_range(0, elites.len())])
                 } else {
-                    Some(marginal[self.rng.gen_range(0..marginal.len())])
+                    Some(marginal[self.rng.gen_range(0, marginal.len())])
                 }
             }
 
@@ -86,7 +85,7 @@ impl EdgeBandRouter {
                     .collect();
 
                 let total: f32 = weights.iter().sum();
-                let mut rnd = self.rng.gen::<f32>() * total;
+                let mut rnd = self.rng.gen_f32() * total;
 
                 for (i, weight) in weights.iter().enumerate() {
                     rnd -= weight;
@@ -99,7 +98,7 @@ impl EdgeBandRouter {
             }
 
             EdgeBandStrategy::Uniform => {
-                Some(&elites[self.rng.gen_range(0..elites.len())])
+                Some(&elites[self.rng.gen_range(0, elites.len())])
             }
         }
     }

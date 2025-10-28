@@ -11,6 +11,7 @@
 //! - Metropolis MCMC acceptance
 //! - Landauer-exact costing
 
+pub mod rng;
 pub mod state;
 pub mod ops;
 pub mod thermo;

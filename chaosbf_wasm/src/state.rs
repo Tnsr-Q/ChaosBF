@@ -1,5 +1,4 @@
-use rand::{Rng, SeedableRng};
-use rand_chacha::ChaCha20Rng;
+use crate::rng::Rng;
 use crate::ops::{Op, op_from_byte, delta_e, OPS};
 use crate::thermo::local_entropy;
 use std::collections::VecDeque;
@@ -122,13 +121,13 @@ pub struct SimState {
     pub info_per_energy: f32,
 
     // RNG
-    pub rng: ChaCha20Rng,
+    pub rng: Rng,
     pub seed: u64,
 }
 
 impl SimState {
     pub fn new(seed: u64, width: usize, height: usize, code: Vec<u8>) -> Self {
-        let rng = ChaCha20Rng::seed_from_u64(seed);
+        let rng = Rng::from_seed(seed);
         let cells = width * height;
         let code_len = code.len().min(MAX_CODE);
 
@@ -323,7 +322,7 @@ impl SimState {
         } else {
             // Accept with probability exp(-ΔF / T)
             let prob = (-delta_f / self.t).exp();
-            let accept = self.rng.gen::<f32>() < prob;
+            let accept = self.rng.gen_f32() < prob;
 
             if accept {
                 self.metropolis_accepts += 1;
@@ -455,9 +454,9 @@ impl SimState {
 
     fn mutate_op(&mut self) {
         let p_mut = (0.2 + 0.6 * self.t).min(0.95);
-        if self.rng.gen::<f32>() < p_mut && self.code_len > 0 {
-            let i = self.rng.gen_range(0..self.code_len);
-            self.code[i] = OPS[self.rng.gen_range(0..OPS.len())];
+        if self.rng.gen_f32() < p_mut && self.code_len > 0 {
+            let i = self.rng.gen_range(0, self.code_len);
+            self.code[i] = OPS[self.rng.gen_range(0, OPS.len())];
             self.mutations += 1;
         }
     }
@@ -471,8 +470,8 @@ impl SimState {
             let burst = ((self.t * 3.0).max(1.0) as usize).min(self.code_len);
             for _ in 0..burst {
                 if self.code_len > 0 {
-                    let i = self.rng.gen_range(0..self.code_len);
-                    self.code[i] = OPS[self.rng.gen_range(0..OPS.len())];
+                    let i = self.rng.gen_range(0, self.code_len);
+                    self.code[i] = OPS[self.rng.gen_range(0, OPS.len())];
                 }
             }
 
@@ -482,12 +481,12 @@ impl SimState {
 
     fn crossover_op(&mut self) {
         if self.bank_size > 0 && self.code_len > 2 {
-            let idx = self.rng.gen_range(0..self.bank_size);
+            let idx = self.rng.gen_range(0, self.bank_size);
             let mate_len = self.genome_lens[idx];
             let k = self.code_len.min(mate_len);
 
             if k > 2 {
-                let cut = self.rng.gen_range(1..k);
+                let cut = self.rng.gen_range(1, k);
                 self.code[cut..k].copy_from_slice(&self.genome_bank[idx][cut..k]);
             }
 
@@ -537,7 +536,7 @@ impl SimState {
 
     fn elite_load_op(&mut self) {
         if self.f < 0.0 && self.elite_size > 0 {
-            let idx = self.rng.gen_range(0..self.elite_size);
+            let idx = self.rng.gen_range(0, self.elite_size);
             let elite_len = self.elite_lens[idx];
             self.code[..elite_len].copy_from_slice(&self.elite[idx][..elite_len]);
             self.code_len = elite_len;
@@ -549,7 +548,7 @@ impl SimState {
 
     fn branch_op(&mut self) {
         let p_branch = (0.3 + 0.4 * self.t).min(0.9);
-        if self.rng.gen::<f32>() < p_branch {
+        if self.rng.gen_f32() < p_branch {
             self.mem[self.ptr] ^= 1;
             if self.branch_hist_ptr < MAX_BRANCH_HIST {
                 self.branch_hist[self.branch_hist_ptr] = 1;

@@ -1,5 +1,4 @@
-use rand::{Rng, SeedableRng};
-use rand_chacha::ChaCha20Rng;
+use crate::rng::Rng;
 use crate::state::SimState;
 
 /// Tiny autoencoder for learning behavioral descriptors
@@ -30,13 +29,13 @@ pub struct TinyAutoencoder {
 
 impl TinyAutoencoder {
     pub fn new(input_dim: usize, latent_dim: usize, hidden_dim: usize, learning_rate: f32, seed: u64) -> Self {
-        let mut rng = ChaCha20Rng::seed_from_u64(seed);
+        let mut rng = Rng::from_seed(seed);
 
         // Xavier initialization helper
-        let xavier_init = |rows: usize, cols: usize, rng: &mut ChaCha20Rng| -> Vec<Vec<f32>> {
+        let xavier_init = |rows: usize, cols: usize, rng: &mut Rng| -> Vec<Vec<f32>> {
             let scale = (2.0 / rows as f32).sqrt();
             (0..rows).map(|_| {
-                (0..cols).map(|_| rng.gen::<f32>() * 2.0 * scale - scale).collect()
+                (0..cols).map(|_| rng.gen_f32() * 2.0 * scale - scale).collect()
             }).collect()
         };
 
@@ -241,21 +240,25 @@ impl AURORADescriptors {
 
             for (i, sample) in training_data.iter().enumerate() {
                 // Simple reconstruction training
+                let temporal_pair = if use_contrastive && i < training_data.len() - 1 {
+                    let negatives = vec![training_data[i + 1].clone()];
+                    Some((sample.as_slice(), negatives))
+                } else {
+                    None
+                };
+
+                let temporal_ref = temporal_pair.as_ref().map(|(s, negs)| (*s, negs.as_slice()));
+
                 let loss = self.autoencoder.train_step(
                     sample,
                     use_contrastive && i < training_data.len() - 1,
-                    if use_contrastive && i < training_data.len() - 1 {
-                        // Temporal pair: next sample as positive
-                        Some((sample.as_slice(), &vec![training_data[i + 1].clone()]))
-                    } else {
-                        None
-                    },
+                    temporal_ref,
                     contrastive_weight
                 );
                 epoch_loss += loss;
             }
 
-            let avg_loss = epoch_loss / n_batches as f32;
+            let _avg_loss = epoch_loss / n_batches as f32;
 
             if (epoch + 1) % 10 == 0 {
                 // Progress logging would go here

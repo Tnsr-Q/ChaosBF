@@ -1,6 +1,5 @@
 use crate::state::SimState;
-use rand::{Rng, SeedableRng};
-use rand_chacha::ChaCha20Rng;
+use crate::rng::Rng;
 
 /// Configuration for a single island
 #[derive(Clone, Debug)]
@@ -30,12 +29,12 @@ pub struct Island {
     pub emigrants: u32,
     pub best_fitness: f32,
     pub diversity: f32,
-    rng: ChaCha20Rng,
+    rng: Rng,
 }
 
 impl Island {
     pub fn new(config: IslandConfig, seed_genomes: &[Vec<u8>], seed: u64) -> Self {
-        let mut rng = ChaCha20Rng::seed_from_u64(seed + config.id as u64);
+        let rng = Rng::from_seed(seed + config.id as u64);
         let mut population = Vec::new();
 
         for genome in seed_genomes {
@@ -122,7 +121,7 @@ impl Island {
     pub fn accept_immigrant(&mut self, migrant: &Migrant) {
         // Create new state with island's conditions
         let mut new_state = SimState::new(
-            self.rng.gen(),
+            self.rng.next_u64(),
             256,
             256,
             migrant.genome.clone(),
@@ -191,12 +190,12 @@ impl Island {
 pub struct IslandEcology {
     pub islands: Vec<Island>,
     pub generation: u32,
-    rng: ChaCha20Rng,
+    rng: Rng,
 }
 
 impl IslandEcology {
     pub fn new(n_islands: usize, seed_genomes: &[Vec<u8>], seed: u64) -> Self {
-        let mut rng = ChaCha20Rng::seed_from_u64(seed);
+        let rng = Rng::from_seed(seed);
         let configs = Self::create_island_configs(n_islands);
 
         let islands = configs.into_iter()
@@ -280,7 +279,7 @@ impl IslandEcology {
         for (source_id, migrants) in migrations {
             for migrant in migrants {
                 // Select destination based on novelty deficit
-                let mut rnd = self.rng.gen::<f32>();
+                let mut rnd = self.rng.gen_f32();
                 let mut dest_idx = 0;
 
                 for (i, prob) in migration_probs.iter().enumerate() {

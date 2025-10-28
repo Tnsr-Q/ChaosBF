@@ -1,10 +1,9 @@
 use crate::state::SimState;
-use serde::{Serialize, Deserialize};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 /// Complete manifest for reproducible runs
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct RunManifest {
     pub run_id: String,
     pub timestamp: u64,
@@ -44,12 +43,17 @@ impl RunManifest {
     }
 
     pub fn to_json(&self) -> String {
-        serde_json::to_string(self).unwrap_or_default()
+        // Manual JSON serialization (no serde dependency)
+        format!(
+            r#"{{"run_id":"{}","timestamp":{},"code_hash":{},"seed":{},"e0":{},"t0":{},"pid_kp":{},"pid_ki":{},"pid_kd":{},"variance_gamma":{}}}"#,
+            self.run_id, self.timestamp, self.code_hash, self.seed,
+            self.e0, self.t0, self.pid_kp, self.pid_ki, self.pid_kd, self.variance_gamma
+        )
     }
 }
 
 /// State snapshot for rewind
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct Snapshot {
     pub step: u32,
     pub e: f32,
@@ -103,7 +107,7 @@ impl Snapshot {
 }
 
 /// Crash capsule for debugging
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct CrashCapsule {
     pub run_id: String,
     pub timestamp: u64,
@@ -136,7 +140,12 @@ impl CrashCapsule {
     }
 
     pub fn to_json(&self) -> String {
-        serde_json::to_string_pretty(self).unwrap_or_default()
+        // Manual JSON serialization (no serde dependency)
+        let error_str = self.error.as_ref().map(|e| format!(r#""{}""#, e)).unwrap_or_else(|| "null".to_string());
+        format!(
+            r#"{{"run_id":"{}","timestamp":{},"step":{},"e":{},"t":{},"s":{},"f":{},"lambda":{},"ptr":{},"error":{}}}"#,
+            self.run_id, self.timestamp, self.step, self.e, self.t, self.s, self.f, self.lambda, self.ptr, error_str
+        )
     }
 }
 
