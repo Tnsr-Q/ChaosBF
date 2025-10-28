@@ -30,7 +30,8 @@ impl Rng {
         let xorshifted = ((oldstate >> 18) ^ oldstate) >> 27;
         let rot = (oldstate >> 59) as u32;
 
-        ((xorshifted >> rot) | (xorshifted << ((!rot).wrapping_add(1) & 31))) as u64
+        // Rotate right by `rot` bits (PCG algorithm: (xorshifted >> rot) | (xorshifted << ((32 - rot) & 31)))
+        ((xorshifted >> rot) | (xorshifted << ((32 - rot) & 31))) as u64
     }
 
     /// Generate u32
