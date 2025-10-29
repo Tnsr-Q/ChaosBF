@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::rng::Rng;
 use crate::state::SimState;
 
