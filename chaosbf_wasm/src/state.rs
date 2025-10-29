@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::rng::Rng;
 use crate::ops::{Op, op_from_byte, delta_e, OPS};
 use crate::thermo::local_entropy;
@@ -80,8 +82,8 @@ pub struct SimState {
 
     // Metropolis acceptance
     pub use_metropolis: bool,
-    metropolis_accepts: u32,
-    metropolis_rejects: u32,
+    pub metropolis_accepts: u32,
+    pub metropolis_rejects: u32,
     mutation_radius: f32,
 
     // Learning parameters

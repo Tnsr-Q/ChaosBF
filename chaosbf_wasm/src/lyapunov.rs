@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::state::SimState;
 
 /// Lyapunov exponent estimator via twin-run divergence
