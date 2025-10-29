@@ -1,11 +1,10 @@
 // ChaosBF Web Worker - runs simulation in background thread
 let wasm = null;
-let frame = null;
-let frameBuffer = null;
+let wasmMemory = null;
 let width = 0;
 let height = 0;
 let running = false;
-let ticksPerFrame = 100; // adjustable performance tuning
+let ticksPerFrame = 100;
 
 self.onmessage = async (e) => {
   const { type, payload } = e.data;
@@ -17,7 +16,7 @@ self.onmessage = async (e) => {
 
     case 'start':
       running = true;
-      requestAnimationFrame(simulationLoop);
+      simulationLoop();
       break;
 
     case 'stop':
@@ -29,39 +28,59 @@ self.onmessage = async (e) => {
       break;
 
     case 'reset':
-      await initSimulation(payload.config);
+      await initSimulation(payload);
       break;
   }
 };
 
 async function initSimulation(config) {
-  // Load WASM module
-  if (!wasm) {
-    const wasmModule = await import('../pkg/chaosbf_wasm.js');
-    await wasmModule.default();
-    wasm = wasmModule;
+  try {
+    // Load WASM module
+    if (!wasm) {
+      const response = await fetch('./chaosbf_wasm.wasm');
+      const bytes = await response.arrayBuffer();
+      const result = await WebAssembly.instantiate(bytes, {});
+      wasm = result.instance.exports;
+      wasmMemory = wasm.memory;
+    }
+
+    width = config.width;
+    height = config.height;
+
+    // Encode code to bytes
+    const encoder = new TextEncoder();
+    const codeBytes = encoder.encode(config.code || '?*@+=');
+
+    // Allocate code in WASM memory (assume heap starts after static data)
+    const codePtr = 1024;  // Safe offset
+    const memory = new Uint8Array(wasmMemory.buffer);
+    memory.set(codeBytes, codePtr);
+
+    // Initialize simulation
+    wasm.init_sim(
+      config.seed || BigInt(Date.now()),
+      width,
+      height,
+      codePtr,
+      codeBytes.length,
+      config.e0 || 200.0,
+      config.t0 || 0.6
+    );
+
+    // Run self-check
+    const checkResult = wasm.self_check();
+    if (checkResult !== 1) {
+      self.postMessage({
+        type: 'error',
+        error: `self_check() failed: ${checkResult}`
+      });
+      return;
+    }
+
+    self.postMessage({ type: 'ready' });
+  } catch (err) {
+    self.postMessage({ type: 'error', error: err.message });
   }
-
-  width = config.width;
-  height = config.height;
-
-  // Allocate frame buffer (transferable)
-  frameBuffer = new Uint8Array(width * height);
-  frame = new Uint8Array(frameBuffer.buffer);
-
-  // Initialize simulation
-  wasm.init_sim({
-    seed: config.seed || Date.now(),
-    width,
-    height,
-    code: config.code,
-    e0: config.e0 || 200.0,
-    t0: config.t0 || 0.6,
-    theta_rep: config.theta_rep || 6.0,
-    landauer_win: config.landauer_win || 16,
-  });
-
-  self.postMessage({ type: 'ready' });
 }
 
 function simulationLoop() {
@@ -70,32 +89,52 @@ function simulationLoop() {
   }
 
   try {
-    // Step simulation and write frame into our buffer
-    const metrics = wasm.step_sim(ticksPerFrame, frame);
+    // Step simulation
+    wasm.step_sim(ticksPerFrame);
 
-    // Send frame to main thread (transfer ownership for zero-copy)
-    self.postMessage(
-      {
-        type: 'frame',
-        frame: frameBuffer,
-        metrics,
-      },
-      [frameBuffer.buffer]
-    );
+    // Read metrics
+    const metricsPtr = wasm.get_metrics_ptr();
+    const metricsArray = new Float32Array(wasmMemory.buffer, metricsPtr, 20);
 
-    // Recreate buffer for next frame (previous was transferred)
-    frameBuffer = new Uint8Array(width * height);
-    frame = new Uint8Array(frameBuffer.buffer);
+    const metrics = {
+      step: metricsArray[0],
+      e: metricsArray[1],
+      t: metricsArray[2],
+      s: metricsArray[3],
+      f: metricsArray[4],
+      lambda_hat: metricsArray[5],
+      mutations: metricsArray[6],
+      replications: metricsArray[7],
+      crossovers: metricsArray[8],
+      learns: metricsArray[9],
+      lambda_volatility: metricsArray[10],
+      ds_dt_ema: metricsArray[11],
+      dk_dt_ema: metricsArray[12],
+      complexity_estimate: metricsArray[13],
+      info_per_energy: metricsArray[14],
+      genome_bank_size: metricsArray[15],
+      output_len: metricsArray[16],
+      pid_kp: metricsArray[17],
+      variance_gamma: metricsArray[18],
+      acceptance_rate: metricsArray[19],
+    };
+
+    // Read tape memory
+    const memPtr = wasm.get_mem_ptr();
+    const memLen = wasm.get_mem_len();
+    const tape = new Uint8Array(wasmMemory.buffer, memPtr, memLen);
+
+    // Copy frame data (don't transfer ownership - it's WASM memory)
+    const frame = new Uint8Array(tape);
+
+    self.postMessage({ type: 'frame', frame, metrics });
 
     // Continue loop
-    requestAnimationFrame(simulationLoop);
+    if (running) {
+      setTimeout(() => simulationLoop(), 16);  // ~60 FPS
+    }
   } catch (err) {
     self.postMessage({ type: 'error', error: err.message });
     running = false;
   }
-}
-
-// Fallback for environments without requestAnimationFrame
-if (typeof requestAnimationFrame === 'undefined') {
-  self.requestAnimationFrame = (cb) => setTimeout(cb, 16);
 }
