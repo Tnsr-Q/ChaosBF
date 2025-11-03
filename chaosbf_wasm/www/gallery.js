@@ -104,7 +104,7 @@ async function init() {
         errorDiv.appendChild(document.createElement('br'));
         errorDiv.appendChild(errorDetail);
         
-        listEl.innerHTML = '';
+        listEl.replaceChildren();
         listEl.appendChild(errorDiv);
     }
 }
@@ -250,7 +250,6 @@ function viewSnapshot(snapshot) {
 window.closeViewer = function() {
     document.getElementById('viewer').classList.remove('active');
     currentSnapshot = null;
-    // Restore focus to previously focused element if available
 };
 
 window.replaySnapshot = function(id) {

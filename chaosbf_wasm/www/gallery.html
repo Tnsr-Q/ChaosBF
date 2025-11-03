@@ -99,6 +99,18 @@
       background: #00ff00;
       color: #000;
     }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
   </style>
 </head>
 <body>
@@ -109,7 +121,7 @@
 
   <div id="viewer" role="dialog" aria-modal="true" aria-labelledby="viewer-title">
     <div id="viewer-content">
-      <h2 id="viewer-title" style="position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden;">Snapshot Details</h2>
+      <h2 id="viewer-title" class="sr-only">Snapshot Details</h2>
       <button type="button" id="viewer-close" class="close-btn" aria-label="Close snapshot viewer">✕ Close</button>
       <div id="viewer-details"></div>
     </div>

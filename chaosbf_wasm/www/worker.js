@@ -6,6 +6,14 @@ let height = 0;
 let running = false;
 let ticksPerFrame = 100;
 
+// Helper to safely get heap base from WASM exports
+// Handles both direct number access and WebAssembly.Global.value property
+function getHeapBase(wasm) {
+  const heapBase = wasm.__heap_base;
+  if (!heapBase) return 1024; // Default fallback
+  return typeof heapBase === 'number' ? heapBase : Number(heapBase.value);
+}
+
 self.onmessage = async (e) => {
   const { type, payload } = e.data;
 
@@ -51,9 +59,8 @@ async function initSimulation(config) {
     const encoder = new TextEncoder();
     const codeBytes = encoder.encode(config.code || '?*@+=');
 
-    // Determine heap base from WASM exports, handle both direct number and Global.value
-    const heapBase = wasm.__heap_base;
-    const codePtr = heapBase ? (typeof heapBase === 'number' ? heapBase : Number(heapBase.value)) : 1024;
+    // Determine heap base using helper function
+    const codePtr = getHeapBase(wasm);
     const memory = new Uint8Array(wasmMemory.buffer);
     
     // Check capacity before memory.set to prevent out-of-bounds write

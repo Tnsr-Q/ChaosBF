@@ -42,7 +42,7 @@ export class TelemetryStream {
         }
 
         // Example: binary encoding with correct allocation and endianness
-        // Allocate 88 bytes: 8 bytes (Float64) + 20 * 4 bytes (Float32)
+        // Calculation: 8 bytes (Float64 timestamp) + 20 * 4 bytes (Float32 metrics) = 88 bytes total
         // const buffer = new ArrayBuffer(88);
         // const view = new DataView(buffer);
         // view.setFloat64(0, Date.now(), true);  // little-endian

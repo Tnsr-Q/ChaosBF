@@ -12,6 +12,14 @@ function encodeString(str) {
   return new TextEncoder().encode(str);
 }
 
+// Helper to safely get heap base from WASM exports
+// Handles both direct number access and WebAssembly.Global.value property
+function getHeapBase(wasm) {
+  const heapBase = wasm.__heap_base;
+  if (!heapBase) return 1024; // Default fallback
+  return typeof heapBase === 'number' ? heapBase : Number(heapBase.value);
+}
+
 function log(message, pass = null) {
   const div = document.createElement('div');
   div.className = 'test' + (pass === true ? ' pass' : pass === false ? ' fail' : '');
@@ -29,10 +37,8 @@ async function runTests() {
   // Use BigInt for i64 seed parameter
   const seed = 12345n;
   const code = encodeString('?*@+=');
-  // Determine heap base properly from WASM exports
-  // WebAssembly.Global has .value property, but check both for compatibility
-  const heapBase = wasm.__heap_base;
-  const codePtr = heapBase ? (typeof heapBase === 'number' ? heapBase : Number(heapBase.value)) : 1024;
+  // Determine heap base using helper function
+  const codePtr = getHeapBase(wasm);
   const memory = new Uint8Array(wasm.memory.buffer);
   memory.set(code, codePtr);
 
