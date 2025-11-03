@@ -95,7 +95,6 @@ class MeshServer {
                 break;
 
             case 'request_migrant': {
-                // Wrap in braces to scope const/let declarations
                 // Send random individual from pool (excluding sender's own)
                 const candidates = this.globalPool.filter(ind => ind.source !== clientId);
                 if (candidates.length > 0) {

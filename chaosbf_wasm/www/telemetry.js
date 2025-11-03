@@ -7,6 +7,8 @@ export class TelemetryStream {
         this.pc = null;  // RTCPeerConnection
         this.dataChannel = null;
         this.enabled = false;
+        // Buffer size calculation: Float64 timestamp (8 bytes) + 20 Float32 metrics (80 bytes)
+        this.TELEMETRY_BUFFER_SIZE = 8 + 20 * 4;  // = 88 bytes
     }
 
     async connect(signalingServer) {
@@ -42,8 +44,7 @@ export class TelemetryStream {
         }
 
         // Example: binary encoding with correct allocation and endianness
-        // Calculation: 8 bytes (Float64 timestamp) + 20 * 4 bytes (Float32 metrics) = 88 bytes total
-        // const buffer = new ArrayBuffer(88);
+        // const buffer = new ArrayBuffer(this.TELEMETRY_BUFFER_SIZE);
         // const view = new DataView(buffer);
         // view.setFloat64(0, Date.now(), true);  // little-endian
         // for (let i = 0; i < 20; i++) {
