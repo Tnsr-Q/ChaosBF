@@ -51,14 +51,24 @@ async function initSimulation(config) {
     const encoder = new TextEncoder();
     const codeBytes = encoder.encode(config.code || '?*@+=');
 
-    // Allocate code in WASM memory (assume heap starts after static data)
-    const codePtr = 1024;  // Safe offset
+    // Determine heap base from WASM exports, convert to Number for JS indexing
+    const codePtr = wasm.__heap_base ? Number(wasm.__heap_base.value) : 1024;
     const memory = new Uint8Array(wasmMemory.buffer);
+    
+    // Check capacity before memory.set to prevent out-of-bounds write
+    if (codePtr + codeBytes.length > memory.length) {
+      self.postMessage({
+        type: 'error',
+        error: 'Code size exceeds available memory'
+      });
+      return;
+    }
+    
     memory.set(codeBytes, codePtr);
 
-    // Initialize simulation
+    // Initialize simulation with BigInt for i64 seed parameter
     wasm.init_sim(
-      config.seed || BigInt(Date.now()),
+      config.seed ? BigInt(config.seed) : BigInt(Date.now()),
       width,
       height,
       codePtr,

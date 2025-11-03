@@ -83,6 +83,17 @@ class GalleryDB {
 const gallery = new GalleryDB();
 let currentSnapshot = null;
 
+// Escape HTML to prevent XSS when using untrusted data
+function escapeHTML(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 async function init() {
     try {
         await gallery.open();
@@ -90,12 +101,22 @@ async function init() {
         await loadSnapshots();
     } catch (err) {
         console.error('Failed to open gallery DB:', err);
-        document.getElementById('snapshot-list').innerHTML = `
-            <div style="color: #ff0000; padding: 20px; border: 1px solid #ff0000;">
-                Error: ${err.message}<br>
-                <small>Gallery feature requires IndexedDB support</small>
-            </div>
-        `;
+        // Create safe error message without innerHTML
+        const listEl = document.getElementById('snapshot-list');
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = 'color: #ff0000; padding: 20px; border: 1px solid #ff0000;';
+        
+        const errorMsg = document.createElement('div');
+        errorMsg.textContent = `Error: ${err.message}`;
+        errorDiv.appendChild(errorMsg);
+        
+        const errorDetail = document.createElement('small');
+        errorDetail.textContent = 'Gallery feature requires IndexedDB support';
+        errorDiv.appendChild(document.createElement('br'));
+        errorDiv.appendChild(errorDetail);
+        
+        listEl.innerHTML = '';
+        listEl.appendChild(errorDiv);
     }
 }
 
@@ -118,24 +139,38 @@ async function loadSnapshots() {
 function createSnapshotCard(snapshot) {
     const card = document.createElement('div');
     card.className = 'snapshot-card';
-    card.onclick = () => viewSnapshot(snapshot);
+    // Attach click handler with addEventListener instead of inline
+    card.addEventListener('click', () => viewSnapshot(snapshot));
 
     const date = new Date(snapshot.timestamp);
     const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
 
-    card.innerHTML = `
-        <h3>${snapshot.run_id || 'Untitled Run'}</h3>
-        <div class="meta">
-            <div>Date: ${dateStr}</div>
-            <div>Step: ${snapshot.step || 0}</div>
-        </div>
-        <div class="metrics">
-            E=${(snapshot.e || 0).toFixed(1)}
-            T=${(snapshot.t || 0).toFixed(2)}
-            S=${(snapshot.s || 0).toFixed(2)}
-            λ=${(snapshot.lambda_estimate || 0).toFixed(2)}
-        </div>
-    `;
+    // Create elements safely without innerHTML for untrusted data
+    const title = document.createElement('h3');
+    title.textContent = snapshot.run_id || 'Untitled Run';
+    card.appendChild(title);
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    
+    const dateDiv = document.createElement('div');
+    dateDiv.textContent = `Date: ${dateStr}`;
+    meta.appendChild(dateDiv);
+    
+    const stepDiv = document.createElement('div');
+    stepDiv.textContent = `Step: ${Number(snapshot.step || 0)}`;
+    meta.appendChild(stepDiv);
+    
+    card.appendChild(meta);
+
+    const metrics = document.createElement('div');
+    metrics.className = 'metrics';
+    // Coerce to numbers before toFixed
+    metrics.textContent = `E=${Number(snapshot.e || 0).toFixed(1)} ` +
+                          `T=${Number(snapshot.t || 0).toFixed(2)} ` +
+                          `S=${Number(snapshot.s || 0).toFixed(2)} ` +
+                          `λ=${Number(snapshot.lambda_estimate || 0).toFixed(2)}`;
+    card.appendChild(metrics);
 
     return card;
 }
@@ -148,39 +183,78 @@ function viewSnapshot(snapshot) {
     const date = new Date(snapshot.timestamp);
     const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
 
-    details.innerHTML = `
-        <h2>${snapshot.run_id || 'Untitled Run'}</h2>
-        <div style="margin-top: 15px; line-height: 1.8;">
-            <div><strong>Date:</strong> ${dateStr}</div>
-            <div><strong>Step:</strong> ${snapshot.step || 0}</div>
-            <div><strong>Energy:</strong> ${(snapshot.e || 0).toFixed(2)}</div>
-            <div><strong>Temperature:</strong> ${(snapshot.t || 0).toFixed(3)}</div>
-            <div><strong>Entropy:</strong> ${(snapshot.s || 0).toFixed(3)}</div>
-            <div><strong>Free Energy:</strong> ${(snapshot.f || 0).toFixed(2)}</div>
-            <div><strong>Lambda:</strong> ${(snapshot.lambda_estimate || 0).toFixed(3)}</div>
-        </div>
-        <div style="margin-top: 15px;">
-            <strong>Code:</strong>
-            <pre style="background: #000; padding: 10px; margin-top: 5px; overflow-x: auto; border: 1px solid #003300;">
-${snapshot.code_hash || 'N/A'}
-            </pre>
-        </div>
-        <div style="margin-top: 15px;">
-            <button onclick="replaySnapshot(${snapshot.id})" style="padding: 8px 16px; background: #003300; border: 1px solid #00ff00; color: #00ff00; cursor: pointer; font-family: inherit;">
-                ▶ Replay
-            </button>
-            <button onclick="deleteSnapshotUI(${snapshot.id})" style="padding: 8px 16px; background: #330000; border: 1px solid #ff0000; color: #ff0000; cursor: pointer; font-family: inherit; margin-left: 10px;">
-                🗑 Delete
-            </button>
-        </div>
-    `;
+    // Build details panel safely without innerHTML for untrusted data
+    details.innerHTML = '';
+    
+    const title = document.createElement('h2');
+    title.textContent = snapshot.run_id || 'Untitled Run';
+    details.appendChild(title);
+
+    const detailsDiv = document.createElement('div');
+    detailsDiv.style.cssText = 'margin-top: 15px; line-height: 1.8;';
+    
+    const fields = [
+        ['Date', dateStr],
+        ['Step', Number(snapshot.step || 0)],
+        ['Energy', Number(snapshot.e || 0).toFixed(2)],
+        ['Temperature', Number(snapshot.t || 0).toFixed(3)],
+        ['Entropy', Number(snapshot.s || 0).toFixed(3)],
+        ['Free Energy', Number(snapshot.f || 0).toFixed(2)],
+        ['Lambda', Number(snapshot.lambda_estimate || 0).toFixed(3)]
+    ];
+    
+    fields.forEach(([label, value]) => {
+        const fieldDiv = document.createElement('div');
+        const strong = document.createElement('strong');
+        strong.textContent = `${label}: `;
+        fieldDiv.appendChild(strong);
+        fieldDiv.appendChild(document.createTextNode(value));
+        detailsDiv.appendChild(fieldDiv);
+    });
+    
+    details.appendChild(detailsDiv);
+
+    const codeSection = document.createElement('div');
+    codeSection.style.marginTop = '15px';
+    const codeLabel = document.createElement('strong');
+    codeLabel.textContent = 'Code:';
+    codeSection.appendChild(codeLabel);
+    
+    const codePre = document.createElement('pre');
+    codePre.style.cssText = 'background: #000; padding: 10px; margin-top: 5px; overflow-x: auto; border: 1px solid #003300;';
+    codePre.textContent = snapshot.code_hash || 'N/A';
+    codeSection.appendChild(codePre);
+    details.appendChild(codeSection);
+
+    const buttonSection = document.createElement('div');
+    buttonSection.style.marginTop = '15px';
+    
+    const replayBtn = document.createElement('button');
+    replayBtn.textContent = '▶ Replay';
+    replayBtn.style.cssText = 'padding: 8px 16px; background: #003300; border: 1px solid #00ff00; color: #00ff00; cursor: pointer; font-family: inherit;';
+    replayBtn.addEventListener('click', () => replaySnapshot(snapshot.id));
+    buttonSection.appendChild(replayBtn);
+    
+    const deleteBtn = document.createElement('button');
+    deleteBtn.textContent = '🗑 Delete';
+    deleteBtn.style.cssText = 'padding: 8px 16px; background: #330000; border: 1px solid #ff0000; color: #ff0000; cursor: pointer; font-family: inherit; margin-left: 10px;';
+    deleteBtn.addEventListener('click', () => deleteSnapshotUI(snapshot.id));
+    buttonSection.appendChild(deleteBtn);
+    
+    details.appendChild(buttonSection);
 
     viewer.classList.add('active');
+    // Move focus to close button for accessibility
+    const closeBtn = document.getElementById('viewer-close');
+    if (closeBtn) {
+        closeBtn.focus();
+    }
 }
 
 window.closeViewer = function() {
     document.getElementById('viewer').classList.remove('active');
     currentSnapshot = null;
+    // Restore focus to previously focused element if available
 };
 
 window.replaySnapshot = function(id) {
@@ -195,6 +269,24 @@ window.deleteSnapshotUI = async function(id) {
         await loadSnapshots();
     }
 };
+
+// Add keyboard handler for Escape key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const viewer = document.getElementById('viewer');
+        if (viewer.classList.contains('active')) {
+            closeViewer();
+        }
+    }
+});
+
+// Add click handler for close button
+document.addEventListener('DOMContentLoaded', () => {
+    const closeBtn = document.getElementById('viewer-close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeViewer);
+    }
+});
 
 // Initialize on load
 init();

@@ -41,12 +41,13 @@ export class TelemetryStream {
             return false;
         }
 
-        // Example: binary encoding
-        // const buffer = new ArrayBuffer(96);  // 8 + 20*4 bytes
+        // Example: binary encoding with correct allocation and endianness
+        // Allocate 88 bytes: 8 bytes (Float64) + 20 * 4 bytes (Float32)
+        // const buffer = new ArrayBuffer(88);
         // const view = new DataView(buffer);
-        // view.setFloat64(0, Date.now());
+        // view.setFloat64(0, Date.now(), true);  // little-endian
         // for (let i = 0; i < 20; i++) {
-        //     view.setFloat32(8 + i * 4, metrics[i]);
+        //     view.setFloat32(8 + i * 4, metrics[i], true);  // little-endian
         // }
         // this.dataChannel.send(buffer);
 
