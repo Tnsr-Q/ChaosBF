@@ -23,7 +23,9 @@ function getHeapBase(wasm) {
 function log(message, pass = null) {
   const div = document.createElement('div');
   div.className = 'test' + (pass === true ? ' pass' : pass === false ? ' fail' : '');
-  div.innerHTML = `<pre>${message}</pre>`;
+  const pre = document.createElement('pre');
+  pre.textContent = message;
+  div.appendChild(pre);
   document.getElementById('results').appendChild(div);
 }
 
