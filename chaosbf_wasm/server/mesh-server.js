@@ -6,6 +6,8 @@
 
 // Max message size to prevent DoS attacks (1MB)
 const MAX_MESSAGE_SIZE = 1_000_000;
+// WebSocket ready state constants (WebSocket module not imported yet)
+const WEBSOCKET_OPEN = 1;
 
 class MeshServer {
     constructor(port = 8080) {
@@ -99,8 +101,7 @@ class MeshServer {
                 if (candidates.length > 0) {
                     const migrant = candidates[Math.floor(Math.random() * candidates.length)];
                     const client = this.clients.get(clientId);
-                    // WebSocket.OPEN = 1 (module not imported yet, using constant directly)
-                    if (client && client.ws.readyState === 1) {
+                    if (client && client.ws.readyState === WEBSOCKET_OPEN) {
                         client.ws.send(JSON.stringify({
                             type: 'migrant',
                             genome: migrant.genome,
@@ -128,9 +129,8 @@ class MeshServer {
             pool_size: this.globalPool.length
         });
 
-        // WebSocket.OPEN = 1 (module not imported yet, using constant directly)
         this.clients.forEach(client => {
-            if (client.ws.readyState === 1) {
+            if (client.ws.readyState === WEBSOCKET_OPEN) {
                 client.ws.send(statsMsg);
             }
         });

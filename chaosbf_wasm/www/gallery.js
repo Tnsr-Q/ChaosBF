@@ -114,8 +114,8 @@ async function loadSnapshots() {
     const listEl = document.getElementById('snapshot-list');
 
     if (snapshots.length === 0) {
-        // Use safe DOM API instead of innerHTML
-        listEl.innerHTML = '';
+        // Clear and add no-data message using safe DOM API
+        listEl.replaceChildren();
         const noDataMsg = document.createElement('p');
         noDataMsg.style.gridColumn = '1/-1';
         noDataMsg.textContent = 'No snapshots yet. Run simulations to create snapshots.';
@@ -123,7 +123,8 @@ async function loadSnapshots() {
         return;
     }
 
-    listEl.innerHTML = '';
+    // Clear existing content using replaceChildren
+    listEl.replaceChildren();
     snapshots.reverse().forEach(snapshot => {
         const card = createSnapshotCard(snapshot);
         listEl.appendChild(card);
@@ -178,7 +179,8 @@ function viewSnapshot(snapshot) {
     const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
 
     // Build details panel safely without innerHTML for untrusted data
-    details.innerHTML = '';
+    // Clear existing content using replaceChildren
+    details.replaceChildren();
     
     const title = document.createElement('h2');
     title.textContent = snapshot.run_id || 'Untitled Run';

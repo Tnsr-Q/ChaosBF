@@ -30,7 +30,9 @@ async function runTests() {
   const seed = 12345n;
   const code = encodeString('?*@+=');
   // Determine heap base properly from WASM exports
-  const codePtr = wasm.__heap_base ? Number(wasm.__heap_base.value) : 1024;
+  // WebAssembly.Global has .value property, but check both for compatibility
+  const heapBase = wasm.__heap_base;
+  const codePtr = heapBase ? (typeof heapBase === 'number' ? heapBase : Number(heapBase.value)) : 1024;
   const memory = new Uint8Array(wasm.memory.buffer);
   memory.set(code, codePtr);
 

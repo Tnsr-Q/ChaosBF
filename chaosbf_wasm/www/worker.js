@@ -51,8 +51,9 @@ async function initSimulation(config) {
     const encoder = new TextEncoder();
     const codeBytes = encoder.encode(config.code || '?*@+=');
 
-    // Determine heap base from WASM exports, convert to Number for JS indexing
-    const codePtr = wasm.__heap_base ? Number(wasm.__heap_base.value) : 1024;
+    // Determine heap base from WASM exports, handle both direct number and Global.value
+    const heapBase = wasm.__heap_base;
+    const codePtr = heapBase ? (typeof heapBase === 'number' ? heapBase : Number(heapBase.value)) : 1024;
     const memory = new Uint8Array(wasmMemory.buffer);
     
     // Check capacity before memory.set to prevent out-of-bounds write
