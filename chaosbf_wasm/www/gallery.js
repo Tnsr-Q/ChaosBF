@@ -154,7 +154,11 @@ function createSnapshotCard(snapshot) {
     const metrics = document.createElement('div');
     metrics.className = 'metrics';
     // Coerce to Number before toFixed
-    metrics.textContent = `E=${Number(snapshot.e || 0).toFixed(1)} T=${Number(snapshot.t || 0).toFixed(2)} S=${Number(snapshot.s || 0).toFixed(2)} λ=${Number(snapshot.lambda_estimate || 0).toFixed(2)}`;
+    const e = Number(snapshot.e || 0).toFixed(1);
+    const t = Number(snapshot.t || 0).toFixed(2);
+    const s = Number(snapshot.s || 0).toFixed(2);
+    const lambda = Number(snapshot.lambda_estimate || 0).toFixed(2);
+    metrics.textContent = `E=${e} T=${t} S=${s} λ=${lambda}`;
     card.appendChild(metrics);
 
     return card;
