@@ -83,13 +83,6 @@ class GalleryDB {
 const gallery = new GalleryDB();
 let currentSnapshot = null;
 
-// Helper to escape HTML and prevent XSS
-function escapeHTML(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-}
-
 async function init() {
     try {
         await gallery.open();
@@ -266,13 +259,11 @@ window.deleteSnapshotUI = async function(id) {
 // Initialize on load
 init();
 
-// Attach close button listener
-document.addEventListener('DOMContentLoaded', () => {
-    const closeBtn = document.getElementById('viewer-close');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', closeViewer);
-    }
-});
+// Attach close button listener directly (script is loaded as module, so DOM is ready)
+const closeBtn = document.getElementById('viewer-close');
+if (closeBtn) {
+    closeBtn.addEventListener('click', closeViewer);
+}
 
 // Add Escape key listener to close viewer
 document.addEventListener('keydown', (event) => {
