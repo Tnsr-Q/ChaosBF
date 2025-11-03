@@ -146,7 +146,7 @@ function createSnapshotCard(snapshot) {
     meta.appendChild(dateDiv);
 
     const stepDiv = document.createElement('div');
-    stepDiv.textContent = `Step: ${Number(snapshot.step) || 0}`;
+    stepDiv.textContent = `Step: ${Number(snapshot.step ?? 0)}`;
     meta.appendChild(stepDiv);
 
     card.appendChild(meta);
