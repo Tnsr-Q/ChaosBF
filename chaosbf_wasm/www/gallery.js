@@ -180,7 +180,7 @@ function viewSnapshot(snapshot) {
 
     const fields = [
         { label: 'Date', value: dateStr },
-        { label: 'Step', value: Number(snapshot.step) || 0 },
+        { label: 'Step', value: Number(snapshot.step ?? 0) },
         { label: 'Energy', value: Number(snapshot.e || 0).toFixed(2) },
         { label: 'Temperature', value: Number(snapshot.t || 0).toFixed(3) },
         { label: 'Entropy', value: Number(snapshot.s || 0).toFixed(3) },
