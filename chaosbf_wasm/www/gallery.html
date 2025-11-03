@@ -19,6 +19,19 @@
       text-shadow: 0 0 10px #00ff00;
     }
 
+    /* Visually hidden class for screen readers */
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      padding: 0;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
     #snapshot-list {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -107,9 +120,10 @@
 
   <div id="snapshot-list"></div>
 
-  <div id="viewer">
+  <div id="viewer" role="dialog" aria-modal="true" aria-labelledby="viewer-title">
     <div id="viewer-content">
-      <button class="close-btn" onclick="closeViewer()">✕ Close</button>
+      <h2 id="viewer-title" class="visually-hidden">Snapshot Details</h2>
+      <button id="viewer-close" type="button" class="close-btn" aria-label="Close snapshot viewer">✕ Close</button>
       <div id="viewer-details"></div>
     </div>
   </div>

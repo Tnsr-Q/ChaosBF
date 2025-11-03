@@ -26,9 +26,10 @@ async function runTests() {
 
   // Test 1: Determinism
   log('\n=== Test 1: Determinism ===');
-  const seed = 12345;
+  const seed = 12345n; // Use BigInt for i64 parameter
   const code = encodeString('?*@+=');
-  const codePtr = wasm.__heap_base || 1024;  // Assume heap starts here
+  // Use __heap_base.value when available, convert to Number for indexing
+  const codePtr = wasm.__heap_base ? Number(wasm.__heap_base.value) : 1024;
   const memory = new Uint8Array(wasm.memory.buffer);
   memory.set(code, codePtr);
 
@@ -69,7 +70,7 @@ async function runTests() {
 
   // Test 2: Pointer Stability
   log('\n=== Test 2: Pointer Stability ===');
-  wasm.init_sim(seed + 1, 256, 256, codePtr, code.length, 200.0, 0.6);
+  wasm.init_sim(seed + 1n, 256, 256, codePtr, code.length, 200.0, 0.6);
 
   const metricsPtrInitial = wasm.get_metrics_ptr();
   const memPtrInitial = wasm.get_mem_ptr();
@@ -97,7 +98,7 @@ async function runTests() {
 
   // Test 3: Metropolis Acceptance Rate
   log('\n=== Test 3: Metropolis Acceptance Rate ===');
-  wasm.init_sim(seed + 2, 256, 256, codePtr, code.length, 200.0, 0.6);
+  wasm.init_sim(seed + 2n, 256, 256, codePtr, code.length, 200.0, 0.6);
   wasm.set_metropolis(true);
   wasm.step_sim(1000);  // Run enough steps to get samples
 
@@ -127,7 +128,7 @@ async function runTests() {
 
   // Test 5: self_check() validation
   log('\n=== Test 5: self_check() validation ===');
-  wasm.init_sim(seed + 3, 256, 256, codePtr, code.length, 200.0, 0.6);
+  wasm.init_sim(seed + 3n, 256, 256, codePtr, code.length, 200.0, 0.6);
   wasm.step_sim(100);
   const checkResult = wasm.self_check();
 

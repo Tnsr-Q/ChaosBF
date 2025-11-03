@@ -51,12 +51,18 @@ async function initSimulation(config) {
     const encoder = new TextEncoder();
     const codeBytes = encoder.encode(config.code || '?*@+=');
 
-    // Allocate code in WASM memory (assume heap starts after static data)
-    const codePtr = 1024;  // Safe offset
+    // Use __heap_base.value when available, fallback to 1024
+    const heapBase = wasm.__heap_base ? Number(wasm.__heap_base.value) : 1024;
+    const codePtr = heapBase;
+    
+    // Validate capacity before writing to memory
     const memory = new Uint8Array(wasmMemory.buffer);
+    if (codePtr + codeBytes.length > memory.length) {
+      throw new Error(`Insufficient memory: need ${codePtr + codeBytes.length} bytes, have ${memory.length}`);
+    }
     memory.set(codeBytes, codePtr);
 
-    // Initialize simulation
+    // Initialize simulation with BigInt seed for i64 parameter
     wasm.init_sim(
       config.seed || BigInt(Date.now()),
       width,

@@ -4,6 +4,8 @@
 
 // const WebSocket = require('ws');
 
+const MAX_MESSAGE_SIZE = 1_000_000; // 1MB limit for message payloads
+
 class MeshServer {
     constructor(port = 8080) {
         this.port = port;
@@ -30,7 +32,22 @@ class MeshServer {
 
         ws.on('message', (data) => {
             try {
-                const msg = JSON.parse(data);
+                // Support Buffer or string payloads - decode Buffer with UTF-8
+                let messageStr;
+                if (Buffer.isBuffer(data)) {
+                    messageStr = data.toString('utf8');
+                } else {
+                    messageStr = data;
+                }
+
+                // Guard against oversized messages
+                if (messageStr.length > MAX_MESSAGE_SIZE) {
+                    console.warn(`Message exceeds size limit: ${messageStr.length} bytes`);
+                    return;
+                }
+
+                // Parse JSON after size check
+                const msg = JSON.parse(messageStr);
                 this.handleMessage(clientId, msg);
             } catch (err) {
                 console.error('Failed to parse message:', err);
@@ -67,13 +84,15 @@ class MeshServer {
                 }
                 break;
 
-            case 'request_migrant':
+            case 'request_migrant': {
                 // Send random individual from pool (excluding sender's own)
                 const candidates = this.globalPool.filter(ind => ind.source !== clientId);
                 if (candidates.length > 0) {
                     const migrant = candidates[Math.floor(Math.random() * candidates.length)];
                     const client = this.clients.get(clientId);
-                    if (client && client.ws.readyState === 1) {  // OPEN
+                    // Use WebSocket.OPEN constant (value 1) for readyState check
+                    const OPEN = 1; // WebSocket.OPEN when ws module is available
+                    if (client && client.ws.readyState === OPEN) {
                         client.ws.send(JSON.stringify({
                             type: 'migrant',
                             genome: migrant.genome,
@@ -83,6 +102,7 @@ class MeshServer {
                     }
                 }
                 break;
+            }
 
             default:
                 console.warn(`Unknown message type from ${clientId}:`, msg.type);
@@ -100,8 +120,9 @@ class MeshServer {
             pool_size: this.globalPool.length
         });
 
+        const OPEN = 1; // WebSocket.OPEN when ws module is available
         this.clients.forEach(client => {
-            if (client.ws.readyState === 1) {
+            if (client.ws.readyState === OPEN) {
                 client.ws.send(statsMsg);
             }
         });
