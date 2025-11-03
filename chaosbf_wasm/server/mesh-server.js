@@ -99,9 +99,8 @@ class MeshServer {
                 if (candidates.length > 0) {
                     const migrant = candidates[Math.floor(Math.random() * candidates.length)];
                     const client = this.clients.get(clientId);
-                    // Use WebSocket.OPEN constant instead of numeric 1
-                    const WS_OPEN = 1; // WebSocket.OPEN when WebSocket module is available
-                    if (client && client.ws.readyState === WS_OPEN) {
+                    // WebSocket.OPEN = 1 (module not imported yet, using constant directly)
+                    if (client && client.ws.readyState === 1) {
                         client.ws.send(JSON.stringify({
                             type: 'migrant',
                             genome: migrant.genome,
@@ -129,10 +128,9 @@ class MeshServer {
             pool_size: this.globalPool.length
         });
 
-        // Use WebSocket.OPEN constant instead of numeric 1
-        const WS_OPEN = 1; // WebSocket.OPEN when WebSocket module is available
+        // WebSocket.OPEN = 1 (module not imported yet, using constant directly)
         this.clients.forEach(client => {
-            if (client.ws.readyState === WS_OPEN) {
+            if (client.ws.readyState === 1) {
                 client.ws.send(statsMsg);
             }
         });

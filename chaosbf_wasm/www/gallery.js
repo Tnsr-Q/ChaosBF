@@ -83,17 +83,6 @@ class GalleryDB {
 const gallery = new GalleryDB();
 let currentSnapshot = null;
 
-// Escape HTML to prevent XSS when using untrusted data
-function escapeHTML(str) {
-    if (str === null || str === undefined) return '';
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
-
 async function init() {
     try {
         await gallery.open();
@@ -125,7 +114,12 @@ async function loadSnapshots() {
     const listEl = document.getElementById('snapshot-list');
 
     if (snapshots.length === 0) {
-        listEl.innerHTML = '<p style="grid-column: 1/-1;">No snapshots yet. Run simulations to create snapshots.</p>';
+        // Use safe DOM API instead of innerHTML
+        listEl.innerHTML = '';
+        const noDataMsg = document.createElement('p');
+        noDataMsg.style.gridColumn = '1/-1';
+        noDataMsg.textContent = 'No snapshots yet. Run simulations to create snapshots.';
+        listEl.appendChild(noDataMsg);
         return;
     }
 
