@@ -3,6 +3,8 @@
 // Feature flag: ENABLE_MESH
 
 // const WebSocket = require('ws');
+// WebSocket.OPEN constant value when ws module is available
+const WEBSOCKET_OPEN = 1;
 
 const MAX_MESSAGE_SIZE = 1_000_000; // 1MB limit for message payloads
 
@@ -90,9 +92,7 @@ class MeshServer {
                 if (candidates.length > 0) {
                     const migrant = candidates[Math.floor(Math.random() * candidates.length)];
                     const client = this.clients.get(clientId);
-                    // Use WebSocket.OPEN constant (value 1) for readyState check
-                    const OPEN = 1; // WebSocket.OPEN when ws module is available
-                    if (client && client.ws.readyState === OPEN) {
+                    if (client && client.ws.readyState === WEBSOCKET_OPEN) {
                         client.ws.send(JSON.stringify({
                             type: 'migrant',
                             genome: migrant.genome,
@@ -120,9 +120,8 @@ class MeshServer {
             pool_size: this.globalPool.length
         });
 
-        const OPEN = 1; // WebSocket.OPEN when ws module is available
         this.clients.forEach(client => {
-            if (client.ws.readyState === OPEN) {
+            if (client.ws.readyState === WEBSOCKET_OPEN) {
                 client.ws.send(statsMsg);
             }
         });
