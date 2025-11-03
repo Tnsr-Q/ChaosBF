@@ -12,10 +12,20 @@ function encodeString(str) {
   return new TextEncoder().encode(str);
 }
 
+// Helper to safely get heap base from WASM exports
+// Handles both direct number access and WebAssembly.Global.value property
+function getHeapBase(wasm) {
+  const heapBase = wasm.__heap_base;
+  if (!heapBase) return 1024; // Default fallback
+  return typeof heapBase === 'number' ? heapBase : Number(heapBase.value);
+}
+
 function log(message, pass = null) {
   const div = document.createElement('div');
   div.className = 'test' + (pass === true ? ' pass' : pass === false ? ' fail' : '');
-  div.innerHTML = `<pre>${message}</pre>`;
+  const pre = document.createElement('pre');
+  pre.textContent = message;
+  div.appendChild(pre);
   document.getElementById('results').appendChild(div);
 }
 
@@ -26,9 +36,11 @@ async function runTests() {
 
   // Test 1: Determinism
   log('\n=== Test 1: Determinism ===');
-  const seed = 12345;
+  // Use BigInt for i64 seed parameter
+  const seed = 12345n;
   const code = encodeString('?*@+=');
-  const codePtr = wasm.__heap_base || 1024;  // Assume heap starts here
+  // Determine heap base using helper function
+  const codePtr = getHeapBase(wasm);
   const memory = new Uint8Array(wasm.memory.buffer);
   memory.set(code, codePtr);
 
@@ -69,7 +81,7 @@ async function runTests() {
 
   // Test 2: Pointer Stability
   log('\n=== Test 2: Pointer Stability ===');
-  wasm.init_sim(seed + 1, 256, 256, codePtr, code.length, 200.0, 0.6);
+  wasm.init_sim(seed + 1n, 256, 256, codePtr, code.length, 200.0, 0.6);
 
   const metricsPtrInitial = wasm.get_metrics_ptr();
   const memPtrInitial = wasm.get_mem_ptr();
@@ -97,7 +109,7 @@ async function runTests() {
 
   // Test 3: Metropolis Acceptance Rate
   log('\n=== Test 3: Metropolis Acceptance Rate ===');
-  wasm.init_sim(seed + 2, 256, 256, codePtr, code.length, 200.0, 0.6);
+  wasm.init_sim(seed + 2n, 256, 256, codePtr, code.length, 200.0, 0.6);
   wasm.set_metropolis(true);
   wasm.step_sim(1000);  // Run enough steps to get samples
 
@@ -127,7 +139,7 @@ async function runTests() {
 
   // Test 5: self_check() validation
   log('\n=== Test 5: self_check() validation ===');
-  wasm.init_sim(seed + 3, 256, 256, codePtr, code.length, 200.0, 0.6);
+  wasm.init_sim(seed + 3n, 256, 256, codePtr, code.length, 200.0, 0.6);
   wasm.step_sim(100);
   const checkResult = wasm.self_check();
 

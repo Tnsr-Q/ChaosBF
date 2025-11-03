@@ -6,6 +6,14 @@ let height = 0;
 let running = false;
 let ticksPerFrame = 100;
 
+// Helper to safely get heap base from WASM exports
+// Handles both direct number access and WebAssembly.Global.value property
+function getHeapBase(wasm) {
+  const heapBase = wasm.__heap_base;
+  if (!heapBase) return 1024; // Default fallback
+  return typeof heapBase === 'number' ? heapBase : Number(heapBase.value);
+}
+
 self.onmessage = async (e) => {
   const { type, payload } = e.data;
 
@@ -51,14 +59,24 @@ async function initSimulation(config) {
     const encoder = new TextEncoder();
     const codeBytes = encoder.encode(config.code || '?*@+=');
 
-    // Allocate code in WASM memory (assume heap starts after static data)
-    const codePtr = 1024;  // Safe offset
+    // Determine heap base using helper function
+    const codePtr = getHeapBase(wasm);
     const memory = new Uint8Array(wasmMemory.buffer);
+    
+    // Check capacity before memory.set to prevent out-of-bounds write
+    if (codePtr + codeBytes.length > memory.length) {
+      self.postMessage({
+        type: 'error',
+        error: 'Code size exceeds available memory'
+      });
+      return;
+    }
+    
     memory.set(codeBytes, codePtr);
 
-    // Initialize simulation
+    // Initialize simulation with BigInt for i64 seed parameter
     wasm.init_sim(
-      config.seed || BigInt(Date.now()),
+      config.seed ? BigInt(config.seed) : BigInt(Date.now()),
       width,
       height,
       codePtr,

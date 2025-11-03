@@ -77,18 +77,25 @@ pub extern "C" fn init_sim(
     e0: f32,
     t0: f32,
 ) {
-    unsafe {
-        let code_slice = std::slice::from_raw_parts(code_ptr, code_len.min(4096));
-        let code = code_slice.to_vec();
+    // Avoid UB: don't call from_raw_parts with null pointer
+    let code = if code_ptr.is_null() || code_len == 0 {
+        Vec::new()
+    } else {
+        // Clamp length to prevent excessive allocations
+        let safe_len = code_len.min(4096);
+        // Use minimal unsafe block around from_raw_parts
+        unsafe {
+            std::slice::from_raw_parts(code_ptr, safe_len).to_vec()
+        }
+    };
 
-        let mut state = SimState::new(seed, width, height, code);
-        state.e = e0;
-        state.t = t0;
+    let mut state = SimState::new(seed, width, height, code);
+    state.e = e0;
+    state.t = t0;
 
-        SIM.with(|sim_cell| {
-            *sim_cell.borrow_mut() = Some(state);
-        });
-    }
+    SIM.with(|sim_cell| {
+        *sim_cell.borrow_mut() = Some(state);
+    });
 }
 
 #[no_mangle]

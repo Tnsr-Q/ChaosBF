@@ -4,6 +4,11 @@
 
 // const WebSocket = require('ws');
 
+// Max message size to prevent DoS attacks (1MB)
+const MAX_MESSAGE_SIZE = 1_000_000;
+// WebSocket ready state constants (WebSocket module not imported yet)
+const WEBSOCKET_OPEN = 1;
+
 class MeshServer {
     constructor(port = 8080) {
         this.port = port;
@@ -30,10 +35,32 @@ class MeshServer {
 
         ws.on('message', (data) => {
             try {
-                const msg = JSON.parse(data);
+                // Handle Buffer or string payloads - convert Buffer to UTF-8 string
+                let msgStr;
+                if (Buffer.isBuffer(data)) {
+                    // Check size before converting
+                    if (data.length > MAX_MESSAGE_SIZE) {
+                        console.warn(`Message from ${clientId} exceeds size limit (${data.length} bytes)`);
+                        return;
+                    }
+                    msgStr = data.toString('utf8');
+                } else if (typeof data === 'string') {
+                    // Check size of string
+                    if (data.length > MAX_MESSAGE_SIZE) {
+                        console.warn(`Message from ${clientId} exceeds size limit (${data.length} chars)`);
+                        return;
+                    }
+                    msgStr = data;
+                } else {
+                    console.warn(`Invalid message type from ${clientId}`);
+                    return;
+                }
+
+                // Parse JSON after size check
+                const msg = JSON.parse(msgStr);
                 this.handleMessage(clientId, msg);
             } catch (err) {
-                console.error('Failed to parse message:', err);
+                console.error(`Failed to parse message from ${clientId}:`, err.message);
             }
         });
 
@@ -67,13 +94,13 @@ class MeshServer {
                 }
                 break;
 
-            case 'request_migrant':
+            case 'request_migrant': {
                 // Send random individual from pool (excluding sender's own)
                 const candidates = this.globalPool.filter(ind => ind.source !== clientId);
                 if (candidates.length > 0) {
                     const migrant = candidates[Math.floor(Math.random() * candidates.length)];
                     const client = this.clients.get(clientId);
-                    if (client && client.ws.readyState === 1) {  // OPEN
+                    if (client && client.ws.readyState === WEBSOCKET_OPEN) {
                         client.ws.send(JSON.stringify({
                             type: 'migrant',
                             genome: migrant.genome,
@@ -83,6 +110,7 @@ class MeshServer {
                     }
                 }
                 break;
+            }
 
             default:
                 console.warn(`Unknown message type from ${clientId}:`, msg.type);
@@ -101,7 +129,7 @@ class MeshServer {
         });
 
         this.clients.forEach(client => {
-            if (client.ws.readyState === 1) {
+            if (client.ws.readyState === WEBSOCKET_OPEN) {
                 client.ws.send(statsMsg);
             }
         });

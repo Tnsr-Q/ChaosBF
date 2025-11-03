@@ -22,10 +22,17 @@ fn count_ngrams(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // For each position, extract n-gram and atomically increment count
     // Use hash table or perfect hashing for fast lookups
 
-    if (idx < params.output_len - params.ngram_size + 1u) {
+    // Avoid unsigned underflow: check bounds safely
+    let len = params.output_len;
+    let n = params.ngram_size;
+    
+    // Check: n > 0 AND idx < len AND (len - idx) >= n
+    if (n > 0u && idx < len && (len - idx) >= n) {
         // Extract n-gram at position idx
         // let ngram = ...;
         // let hash = hash_ngram(ngram);
-        // atomicAdd(&ngram_counts[hash], 1u);
+        // Ensure hash index is within bounds before atomicAdd
+        // let hash_idx = hash % params.hash_table_size;
+        // atomicAdd(&ngram_counts[hash_idx], 1u);
     }
 }
