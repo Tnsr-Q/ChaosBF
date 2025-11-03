@@ -42,11 +42,11 @@ export class TelemetryStream {
         }
 
         // Example: binary encoding
-        // const buffer = new ArrayBuffer(96);  // 8 + 20*4 bytes
+        // const buffer = new ArrayBuffer(88);  // 1 double (8 bytes) + 20 floats (80 bytes)
         // const view = new DataView(buffer);
-        // view.setFloat64(0, Date.now());
+        // view.setFloat64(0, Date.now(), true);  // little-endian
         // for (let i = 0; i < 20; i++) {
-        //     view.setFloat32(8 + i * 4, metrics[i]);
+        //     view.setFloat32(8 + i * 4, metrics[i], true);  // little-endian
         // }
         // this.dataChannel.send(buffer);
 

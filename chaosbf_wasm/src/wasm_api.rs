@@ -77,18 +77,27 @@ pub extern "C" fn init_sim(
     e0: f32,
     t0: f32,
 ) {
-    unsafe {
-        let code_slice = std::slice::from_raw_parts(code_ptr, code_len.min(4096));
-        let code = code_slice.to_vec();
+    // Avoid UB from null pointer or zero length - use empty Vec if invalid
+    let code = if code_ptr.is_null() || code_len == 0 {
+        Vec::new()
+    } else {
+        // Clamp length to maximum allowed size
+        let clamped_len = code_len.min(4096);
+        // SAFETY: Safe if code_ptr is valid and points to at least clamped_len bytes
+        // Minimal unsafe block to create slice and copy to Vec
+        unsafe {
+            let code_slice = std::slice::from_raw_parts(code_ptr, clamped_len);
+            code_slice.to_vec()
+        }
+    };
 
-        let mut state = SimState::new(seed, width, height, code);
-        state.e = e0;
-        state.t = t0;
+    let mut state = SimState::new(seed, width, height, code);
+    state.e = e0;
+    state.t = t0;
 
-        SIM.with(|sim_cell| {
-            *sim_cell.borrow_mut() = Some(state);
-        });
-    }
+    SIM.with(|sim_cell| {
+        *sim_cell.borrow_mut() = Some(state);
+    });
 }
 
 #[no_mangle]
