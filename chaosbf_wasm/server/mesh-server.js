@@ -43,8 +43,8 @@ class MeshServer {
                 }
 
                 // Guard against oversized messages
-                if (messageStr.length > MAX_MESSAGE_SIZE) {
-                    console.warn(`Message exceeds size limit: ${messageStr.length} bytes`);
+                if (Buffer.byteLength(messageStr, 'utf8') > MAX_MESSAGE_SIZE) {
+                    console.warn(`Message exceeds size limit: ${Buffer.byteLength(messageStr, 'utf8')} bytes`);
                     return;
                 }
 
