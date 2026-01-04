@@ -43,6 +43,8 @@ export class TelemetryStream {
             return false;
         }
 
+        // Example: binary encoding
+        // const buffer = new ArrayBuffer(88);  // 1 double (8 bytes) + 20 floats (80 bytes)
         // Example: binary encoding with correct allocation and endianness
         // const buffer = new ArrayBuffer(this.TELEMETRY_BUFFER_SIZE);
         // const view = new DataView(buffer);

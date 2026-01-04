@@ -36,6 +36,10 @@ async function runTests() {
 
   // Test 1: Determinism
   log('\n=== Test 1: Determinism ===');
+  const seed = 12345n; // Use BigInt for i64 parameter
+  const code = encodeString('?*@+=');
+  // Use __heap_base.value when available, convert to Number for indexing
+  const codePtr = wasm.__heap_base ? Number(wasm.__heap_base.value) : 1024;
   // Use BigInt for i64 seed parameter
   const seed = 12345n;
   const code = encodeString('?*@+=');

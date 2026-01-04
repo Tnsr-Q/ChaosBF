@@ -3,6 +3,10 @@
 // Feature flag: ENABLE_MESH
 
 // const WebSocket = require('ws');
+// WebSocket.OPEN constant value when ws module is available
+const WEBSOCKET_OPEN = 1;
+
+const MAX_MESSAGE_SIZE = 1_000_000; // 1MB limit for message payloads
 
 // Max message size to prevent DoS attacks (1MB)
 const MAX_MESSAGE_SIZE = 1_000_000;
@@ -57,6 +61,7 @@ class MeshServer {
                 }
 
                 // Parse JSON after size check
+                const msg = JSON.parse(messageStr);
                 const msg = JSON.parse(msgStr);
                 this.handleMessage(clientId, msg);
             } catch (err) {
