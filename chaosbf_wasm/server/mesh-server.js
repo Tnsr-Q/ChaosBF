@@ -8,6 +8,11 @@ const WEBSOCKET_OPEN = 1;
 
 const MAX_MESSAGE_SIZE = 1_000_000; // 1MB limit for message payloads
 
+// Max message size to prevent DoS attacks (1MB)
+const MAX_MESSAGE_SIZE = 1_000_000;
+// WebSocket ready state constants (WebSocket module not imported yet)
+const WEBSOCKET_OPEN = 1;
+
 class MeshServer {
     constructor(port = 8080) {
         this.port = port;
@@ -34,25 +39,33 @@ class MeshServer {
 
         ws.on('message', (data) => {
             try {
-                // Support Buffer or string payloads - decode Buffer with UTF-8
-                let messageStr;
+                // Handle Buffer or string payloads - convert Buffer to UTF-8 string
+                let msgStr;
                 if (Buffer.isBuffer(data)) {
-                    messageStr = data.toString('utf8');
+                    // Check size before converting
+                    if (data.length > MAX_MESSAGE_SIZE) {
+                        console.warn(`Message from ${clientId} exceeds size limit (${data.length} bytes)`);
+                        return;
+                    }
+                    msgStr = data.toString('utf8');
+                } else if (typeof data === 'string') {
+                    // Check size of string
+                    if (data.length > MAX_MESSAGE_SIZE) {
+                        console.warn(`Message from ${clientId} exceeds size limit (${data.length} chars)`);
+                        return;
+                    }
+                    msgStr = data;
                 } else {
-                    messageStr = data;
-                }
-
-                // Guard against oversized messages
-                if (Buffer.byteLength(messageStr, 'utf8') > MAX_MESSAGE_SIZE) {
-                    console.warn(`Message exceeds size limit: ${Buffer.byteLength(messageStr, 'utf8')} bytes`);
+                    console.warn(`Invalid message type from ${clientId}`);
                     return;
                 }
 
                 // Parse JSON after size check
                 const msg = JSON.parse(messageStr);
+                const msg = JSON.parse(msgStr);
                 this.handleMessage(clientId, msg);
             } catch (err) {
-                console.error('Failed to parse message:', err);
+                console.error(`Failed to parse message from ${clientId}:`, err.message);
             }
         });
 

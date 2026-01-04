@@ -27,6 +27,11 @@ fn count_ngrams(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let n = params.ngram_size;
     
     // Check: n > 0, idx < len, and (len - idx) >= n to avoid underflow
+    // Avoid unsigned underflow: check bounds safely
+    let len = params.output_len;
+    let n = params.ngram_size;
+    
+    // Check: n > 0 AND idx < len AND (len - idx) >= n
     if (n > 0u && idx < len && (len - idx) >= n) {
         // Extract n-gram at position idx
         // let ngram = ...;
@@ -34,5 +39,8 @@ fn count_ngrams(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Ensure hash is within bounds before atomicAdd
         // let hash_index = hash % params.hash_table_size;
         // atomicAdd(&ngram_counts[hash_index], 1u);
+        // Ensure hash index is within bounds before atomicAdd
+        // let hash_idx = hash % params.hash_table_size;
+        // atomicAdd(&ngram_counts[hash_idx], 1u);
     }
 }
