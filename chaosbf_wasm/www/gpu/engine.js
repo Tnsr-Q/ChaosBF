@@ -10,14 +10,13 @@ export class GPUEngine {
         this.enabled = false;
     }
 
-    async init() {
-        // TODO: Check for WebGPU support
-        if (!navigator.gpu) {
-            console.warn('WebGPU not supported');
-            return false;
-        }
-
+    async initialize() {
         try {
+            if (!navigator.gpu) {
+                console.warn('WebGPU not supported');
+                return false;
+            }
+
             const adapter = await navigator.gpu.requestAdapter();
             if (!adapter) {
                 console.warn('No WebGPU adapter found');
