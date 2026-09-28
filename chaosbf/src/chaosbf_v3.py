@@ -29,14 +29,37 @@ SAFE_OPS = "><+-.,^v:?*@=!#%~"
 
 
 def K(b: str) -> float:
-    """Kolmogorov complexity proxy using LZ compression."""
+    """Kolmogorov complexity proxy.
+
+    For strings long enough that zlib overhead is negligible (>=20 chars)
+    we use the classic incompressibility measure: len(raw) - len(compressed).
+    For shorter strings zlib's ~8-14 byte header dominates and the
+    difference is always 0, so we fall back to Shannon entropy × length
+    which gives a meaningful [0, len·log2(256)] complexity estimate even
+    for single-character outputs.
+    """
     if not b:
         return 0.0
+
+    n = len(b)
+
+    # Short-string path: Shannon entropy × length
+    if n < 20:
+        from collections import Counter
+        counts = Counter(b)
+        entropy = 0.0
+        for c in counts.values():
+            p = c / n
+            if p > 0:
+                entropy -= p * log2(p)
+        return entropy * n
+
+    # Long-string path: incompressibility via zlib
     try:
         c = zlib.compress(b.encode('latin1'), level=9)
-        return max(0.0, len(b) - len(c))
-    except:
-        return float(len(b))
+        return max(0.0, n - len(c))
+    except Exception:
+        return float(n)
 
 
 def ema(value: float, prev_ema: float, alpha: float = 0.2) -> float:
@@ -807,8 +830,17 @@ class ChaosBFv3:
         elif op == '!':
             # Compute fitness AFTER operations
             descriptors = self.compute_descriptors()
-            score = descriptors['K_output'] / (1 + abs(self.E - self.E_initial))
-            if score > 1.0:
+            # Elite score: reward output complexity per unit of energy *spent*.
+            # Energy spent is (E_initial - E); clamp to avoid div-by-zero or
+            # crediting energy gains.  The old formula used |E - E_initial| in
+            # the denominator which made the score ~0 as soon as any energy was
+            # consumed (denominator ~200 while K_output << 200).  The fix uses
+            # energy_spent in the *denominator divisor* so spending energy is
+            # expected and only the *efficiency* matters, with a much lower
+            # promotion bar (0.01 instead of 1.0).
+            energy_spent = max(1.0, self.E_initial - self.E)
+            score = descriptors['K_output'] / (1 + energy_spent / self.E_initial)
+            if score > 0.01:
                 self.elite.append(''.join(self.code))
                 
         elif op == '{':

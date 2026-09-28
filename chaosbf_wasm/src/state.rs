@@ -58,6 +58,9 @@ pub struct SimState {
     pub theta_rep: f32,        // Replication threshold
     landauer_win: usize,
 
+    // Initial energy (for relative elite scoring)
+    pub e_initial: f32,
+
     // Local entropy cache
     pub slocal: f32,
 
@@ -161,6 +164,7 @@ impl SimState {
             tau: 0.1,
             theta_rep: 6.0,
             landauer_win: 16,
+            e_initial: 200.0,
             slocal: 0.0,
             use_pid: true,
             pid_kp: 0.1,
@@ -529,7 +533,14 @@ impl SimState {
     }
 
     fn elite_save_op(&mut self) {
-        if self.e > 50.0 && self.s > 1.0 && self.elite_size < MAX_ELITE {
+        // Old gate: `e > 50.0 && s > 1.0` — energy drains monotonically via
+        // operation costs, so this became unsatisfiable within ~100 steps for
+        // most genomes (E starts at 200, costs ~2/step).  The fix uses a
+        // relative energy condition (retain at least 5% of initial E) so the
+        // gate stays reachable throughout the run, plus a lower entropy bar
+        // (s > 0.1) since even modest computation produces *some* entropy.
+        let e_floor = self.e_initial * 0.05;
+        if self.e > e_floor && self.s > 0.1 && self.elite_size < MAX_ELITE {
             self.elite[self.elite_size][..self.code_len].copy_from_slice(&self.code[..self.code_len]);
             self.elite_lens[self.elite_size] = self.code_len;
             self.elite_size += 1;
