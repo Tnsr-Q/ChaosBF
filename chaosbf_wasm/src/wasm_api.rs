@@ -91,6 +91,7 @@ pub extern "C" fn init_sim(
 
     let mut state = SimState::new(seed, width, height, code);
     state.e = e0;
+    state.e_initial = e0;
     state.t = t0;
 
     SIM.with(|sim_cell| {
