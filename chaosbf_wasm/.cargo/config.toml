@@ -1,0 +1,8 @@
+[target.wasm32-unknown-unknown]
+rustflags = [
+  "-C", "link-arg=--export=__heap_base",
+  "-C", "link-arg=--export=__data_end",
+  "-C", "link-arg=-zstack-size=8388608",
+  "-C", "link-arg=--initial-memory=33554432",
+  "-C", "link-arg=--max-memory=268435456",
+]
