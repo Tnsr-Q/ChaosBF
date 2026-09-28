@@ -81,20 +81,9 @@ pub extern "C" fn init_sim(
     let code = if code_ptr.is_null() || code_len == 0 {
         Vec::new()
     } else {
-        // Clamp length to maximum allowed size
-        let clamped_len = code_len.min(4096);
-        // SAFETY: Safe if code_ptr is valid and points to at least clamped_len bytes
-        // Minimal unsafe block to create slice and copy to Vec
-        unsafe {
-            let code_slice = std::slice::from_raw_parts(code_ptr, clamped_len);
-            code_slice.to_vec()
-    // Avoid UB: don't call from_raw_parts with null pointer
-    let code = if code_ptr.is_null() || code_len == 0 {
-        Vec::new()
-    } else {
         // Clamp length to prevent excessive allocations
         let safe_len = code_len.min(4096);
-        // Use minimal unsafe block around from_raw_parts
+        // SAFETY: safe if code_ptr points to at least safe_len valid bytes.
         unsafe {
             std::slice::from_raw_parts(code_ptr, safe_len).to_vec()
         }
