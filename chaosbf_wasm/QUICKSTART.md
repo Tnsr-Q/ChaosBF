@@ -8,7 +8,7 @@ The WASM module is already compiled and ready to run:
 ./serve.sh
 ```
 
-Then open your browser to **http://localhost:8080/index_standalone.html**
+Then open your browser to **http://localhost:8080/index.html**
 
 ## 🎮 Using the Interface
 

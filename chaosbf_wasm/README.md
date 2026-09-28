@@ -33,30 +33,32 @@ chaosbf_wasm/
 
 ### Prerequisites
 
-- Rust (1.70+)
-- wasm-pack: `cargo install wasm-pack`
+- Rust (1.90+; pinned via `../rust-toolchain.toml`)
+- `wasm32-unknown-unknown` target: `rustup target add wasm32-unknown-unknown`
 - Python 3 (for local dev server)
 
 ### Build & Run
 
+The frontend loads the raw WASM module directly (`www/chaosbf_wasm.wasm`) — there is **no**
+`wasm-bindgen` glue. Build with a plain `cargo build` and copy the artifact into `www/`. The
+linker flags required for the demo (8 MB stack, exported `__heap_base` / `__data_end`,
+32 MB initial / 256 MB max memory) live in `.cargo/config.toml`, so no extra flags are needed.
+
 ```bash
-# Build WASM module
-wasm-pack build --target web --out-dir www/pkg
+# Build WASM module (release)
+cargo build --release --target wasm32-unknown-unknown
+
+# Copy the built module into the web directory
+cp target/wasm32-unknown-unknown/release/chaosbf_wasm.wasm www/chaosbf_wasm.wasm
 
 # Serve locally
 python3 -m http.server 8080 -d www
 
-# Open browser to http://localhost:8080
+# Open browser to http://localhost:8080/index.html
 ```
 
-Or use npm scripts:
-
-```bash
-npm install
-npm run build    # Build WASM
-npm run serve    # Serve on :8080
-npm run dev      # Build + serve
-```
+> A prebuilt `www/chaosbf_wasm.wasm` is committed, so you can serve the `www/` directory
+> and open the demo without rebuilding.
 
 ## ChaosBF Opcodes
 

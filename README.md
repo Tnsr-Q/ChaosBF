@@ -11,7 +11,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)
-![Rust](https://img.shields.io/badge/rust-1.70+-orange.svg)
+![Rust](https://img.shields.io/badge/rust-1.90+-orange.svg)
 ![Status: v4.0-alpha](https://img.shields.io/badge/status-v4.0--alpha-green.svg)
 
 [**Live Demo**](#interactive-demo) · [**Paper**](#publication-ready) · [**Getting Started**](#quick-start) · [**Documentation**](chaosbf/docs/)
@@ -109,7 +109,7 @@ It's a **complete digital organism** in one line.
 
 *Real-time WebAssembly visualization of thermodynamic evolution*
 
-**[Launch Interactive Demo](chaosbf_wasm/www/index.html)** | **[Standalone Version](chaosbf_wasm/www/index_standalone.html)**
+**[Launch Interactive Demo](chaosbf_wasm/www/index.html)**
 
 </div>
 
@@ -258,8 +258,9 @@ python3.8+
 pip install -r requirements.txt
 
 # Rust/WASM (for interactive demo)
-rustup install 1.70
-cargo install wasm-pack
+# The repo pins its toolchain via rust-toolchain.toml (channel 1.90.0)
+rustup toolchain install 1.90.0
+rustup target add wasm32-unknown-unknown
 ```
 
 ### Run Your First Evolution
@@ -273,6 +274,8 @@ cd ChaosBF/chaosbf
 python3 src/chaosbf_v3.py "++[>+<-].:{;}{?}^*=@" --energy 200 --temp 0.6 --steps 1000
 
 # Visualize thermodynamic evolution
+# (run from chaosbf/ so src/ imports resolve; writes *_thermodynamics.png,
+#  *_evolution.png, *_criticality.png and a *_data.csv trace to output/)
 python3 src/visualize.py "?*{+>-<}@=" --steps 4000 --output output/my_run
 
 # Run MAP-Elites quality-diversity evolution
@@ -284,13 +287,29 @@ python3 src/zoom_grid_map_elites.py --code "?*{+>-<}@=" --iterations 300
 
 ### Launch Interactive Demo
 
+The web frontend loads the raw WebAssembly module directly (`www/chaosbf_wasm.wasm`) — no
+`wasm-bindgen` glue is required. Build with a plain `cargo build` for the
+`wasm32-unknown-unknown` target and copy the artifact into `www/`. The linker flags needed
+for the demo (larger stack, exported `__heap_base` / `__data_end`, initial/max memory) are
+already committed in `chaosbf_wasm/.cargo/config.toml`, so no extra flags are needed.
+
 ```bash
 cd chaosbf_wasm
-wasm-pack build --target web
+
+# Build the WASM module (release)
+cargo build --release --target wasm32-unknown-unknown
+
+# Copy the built module into the web directory
+cp target/wasm32-unknown-unknown/release/chaosbf_wasm.wasm www/chaosbf_wasm.wasm
+
+# Serve the demo
 cd www
 python3 -m http.server 8080
-# Open http://localhost:8080 in your browser
+# Open http://localhost:8080/index.html in your browser
 ```
+
+> A prebuilt `www/chaosbf_wasm.wasm` is already committed, so you can skip the build steps
+> and just serve the `www/` directory to try the demo immediately.
 
 ---
 
